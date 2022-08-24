@@ -25,8 +25,8 @@ describe("SimpleEmployment", function () {
  * should allow employee to send signature and signing date
  * should not allow other accounts to send employee sign
  * 
- * 
- * 
+ * only employee or delegate allowed to raise dispute
+ * only parties allowed to pause
  * 
  * 
  */
