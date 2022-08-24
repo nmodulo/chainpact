@@ -1,6 +1,9 @@
-# Sample Hardhat Project
+# ChainPact Contracts Repo
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+ChainPact is a decentralized contracting application built for EVM-based blockchain.
+
+[PoC in progress, stand by...]
+
 
 Try running some of the following tasks:
 
