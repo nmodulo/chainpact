@@ -25,25 +25,24 @@ contract SimpleEmployment {
     mapping (address => bool) isEmployeeDelegate;
     mapping (address => bool) isEmployerDelegate;
 
-
-    mapping (address => bool) signedFlag;
-
-    mapping(address => bool) public isArbitrator;
-
-
     //modifiers
     modifier onlyEmployer{
-        require(isEmployerDelegate[msg.sender], "Employer Delegate only");
+        require(isEmployerDelegate[msg.sender], "employer delegate only");
         _;
     }
 
     modifier onlyEmployee{
-        require(isEmployeeDelegate[msg.sender], "Employee Delegate only");
+        require(isEmployeeDelegate[msg.sender], "employee delegate only");
         _;
     }
 
     modifier onlyParties{
         require(isEmployeeDelegate[msg.sender] || isEmployerDelegate[msg.sender], "only parties");
+        _;
+    }
+
+    modifier isActive{
+        require(pactState == PactState.ACTIVE, "not active");
         _;
     }
 
@@ -54,7 +53,7 @@ contract SimpleEmployment {
         address employer_,
         uint128 payScheduleDays_,
         uint128 payAmount_) {
-
+        require (payAmount_ > 0 && pactName_ != 0);
         pactData = CoreData({
             pactName : pactName_,
             employee : employee_,
@@ -87,7 +86,7 @@ contract SimpleEmployment {
     // Function to retract the stake before the employee signs
     function retractOffer() external onlyEmployer returns (bool){
         require(pactState < PactState.ALL_SIGNED, "Contract already signed");
-        pactState = PactState.DEPLOYED;
+        pactState = PactState.RETRACTED;
         stakeAmount = 0;
         payable(pactData.employer).transfer(stakeAmount);
         return true;
@@ -95,13 +94,10 @@ contract SimpleEmployment {
     
     // Function to send digital signature as the employee
     function employeeSign(bytes calldata signature, uint256 signingDate_) external returns (bool){
-
         PactState pactState_ = pactState;
         CoreData memory pactData_ = pactData;
-        
         require(pactState_ < PactState.ALL_SIGNED, "Already signed");
         require(recoverContractSigner(signature, signingDate_) == pactData_.employee, "Employee Sign Invalid");
-
         employeeSignDate = signingDate_;
 
         if(pactState_ == PactState.EMPLOYER_SIGNED) {
@@ -113,6 +109,7 @@ contract SimpleEmployment {
     }
 
     function delegate(address[] calldata delegates, bool addOrRevoke) external{
+        require(pactState >= PactState.ALL_SIGNED);
         if(msg.sender == pactData.employer){
             for(uint i=0; i<delegates.length; i++){
                 isEmployerDelegate[delegates[i]] = addOrRevoke;
@@ -126,30 +123,31 @@ contract SimpleEmployment {
     }
 
     function start() external onlyEmployer{
+        require(pactState == PactState.ALL_SIGNED);
         pactState = PactState.ACTIVE;
+        lastPaymentMade.timeStamp = uint128(block.timestamp);
     }
 
-    function pause() external onlyParties{
+    function pause() external onlyParties isActive{
         pactState = PactState.PAUSED;
         pauseResumeTime = block.timestamp;
     }
 
     function resume() external onlyParties{
+        require(pactState == PactState.PAUSED);
         pactState = PactState.ACTIVE;
         pauseDuration = block.timestamp - pauseResumeTime;
         pauseResumeTime = block.timestamp;
     }
 
-    function approvePayment() external payable onlyEmployer{
+    function approvePayment() external payable onlyEmployer isActive{
         require(msg.value >= pactData.payAmount, "Amount less than payAmount");
-        require(pactState == PactState.ACTIVE);
         lastPaymentMade = Payment({timeStamp: uint128(block.timestamp), amount: uint128(msg.value)});
         pauseDuration = 0;
         payable(pactData.employee).transfer(msg.value);
     }
 
-    function resign() external onlyEmployee{
-        require(pactState == PactState.ACTIVE, "Not active");
+    function resign() external onlyEmployee isActive{
         pactState = PactState.RESIGNED;
     }
 
@@ -158,19 +156,21 @@ contract SimpleEmployment {
         pactState = PactState.END_ACCEPTED;
     }
 
-    function terminate() external onlyEmployer{
-        require(pactState == PactState.ACTIVE, "Not active");
+    function terminate() external onlyEmployer isActive{
         pactState = PactState.TERMINATED;
         uint stakeAmount_ = stakeAmount;
 
         // Payment due assumed
-        uint lockedAmt = (pactData.payAmount * (block.timestamp - lastPaymentMade.timeStamp - pauseDuration)) / (pactData.payScheduleDays *86400*1000);
-
-        // Nothing to refund
+        uint lockedAmt = (pactData.payAmount * (block.timestamp - lastPaymentMade.timeStamp - pauseDuration))
+        / (pactData.payScheduleDays *86400*1000);
         if (lockedAmt >= stakeAmount_) return;
 
         uint refundAmount_= stakeAmount_ - lockedAmt;
         stakeAmount = lockedAmt;
+
+        if(address(this).balance < refundAmount_){
+            return;
+        }
         payable(msg.sender).transfer(refundAmount_);
     }
 
@@ -201,6 +201,9 @@ contract SimpleEmployment {
                 pactState = PactState.FNF_SETTLED;
             }
             if(msg.value > 0){
+                if(pactState == PactState.DISPUTED && msg.value >= disputeData.proposedAmount){
+                    pactState = PactState.FNF_SETTLED;
+                }
                 payable(pactData.employee).transfer(msg.value);
             } 
 
@@ -218,8 +221,9 @@ contract SimpleEmployment {
     }
 
     function proposeArbitrators(address[] calldata proposedArbitrators_) external onlyParties{
-        require(!(disputeData.arbitratorProposed), "Already Proposed");
+        require(!(disputeData.arbitratorAccepted), "Already Accepted");
         pactState = PactState.ARBITRATED;
+        disputeData.arbitratorProposer = msg.sender;
         delete disputeData.proposedArbitrators;
         for(uint i=0; i<proposedArbitrators_.length; i++){
             disputeData.proposedArbitrators.push(Arbitrator({addr: proposedArbitrators_[i], hasResolved: false}));
@@ -227,6 +231,13 @@ contract SimpleEmployment {
     }
 
     function acceptOrRejectArbitrators(bool acceptOrReject) external onlyParties{
+        require(pactState == PactState.ARBITRATED, "Not arbitrated");
+
+        if(isEmployeeDelegate[disputeData.arbitratorProposer]){
+            require(isEmployerDelegate[msg.sender]);
+        } else {
+            require(isEmployeeDelegate[msg.sender]);
+        }
         disputeData.arbitratorAccepted = acceptOrReject;
         if(!acceptOrReject) disputeData.arbitratorProposed = false;
     }

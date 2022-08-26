@@ -21,7 +21,8 @@ struct Payment{
 
 struct Dispute{
     uint128 proposedAmount;
-    Arbitrator[] proposedArbitrators;
+    address arbitratorProposer;
     bool arbitratorProposed;
     bool arbitratorAccepted;
+    Arbitrator[] proposedArbitrators;
 }
