@@ -1,0 +1,707 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Slither",
+          "informationUri": "https://github.com/crytic/slither",
+          "version": "0.8.3",
+          "rules": [
+            {
+              "id": "3-0-solc-version",
+              "name": "solc-version",
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "0.0"
+              },
+              "shortDescription": {
+                "text": "Incorrect versions of Solidity"
+              },
+              "help": {
+                "text": "\nDeploy with any of the following Solidity versions:\n- 0.5.16 - 0.5.17\n- 0.6.11 - 0.6.12\n- 0.7.5 - 0.7.6\n- 0.8.4 - 0.8.7\nUse a simple pragma version that allows any of these versions.\nConsider using the latest version of Solidity for testing."
+              }
+            },
+            {
+              "id": "2-1-timestamp",
+              "name": "timestamp",
+              "properties": {
+                "precision": "high",
+                "security-severity": "3.0"
+              },
+              "shortDescription": {
+                "text": "Block timestamp"
+              },
+              "help": {
+                "text": "Avoid relying on `block.timestamp`."
+              }
+            },
+            {
+              "id": "3-0-assembly",
+              "name": "assembly",
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "0.0"
+              },
+              "shortDescription": {
+                "text": "Assembly usage"
+              },
+              "help": {
+                "text": "Do not use `evm` assembly."
+              }
+            },
+            {
+              "id": "3-0-pragma",
+              "name": "pragma",
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "0.0"
+              },
+              "shortDescription": {
+                "text": "Different pragma directives are used"
+              },
+              "help": {
+                "text": "Use one Solidity version."
+              }
+            },
+            {
+              "id": "3-1-dead-code",
+              "name": "dead-code",
+              "properties": {
+                "precision": "high",
+                "security-severity": "0.0"
+              },
+              "shortDescription": {
+                "text": "Dead-code"
+              },
+              "help": {
+                "text": "Remove unused functions."
+              }
+            },
+            {
+              "id": "3-1-similar-names",
+              "name": "similar-names",
+              "properties": {
+                "precision": "high",
+                "security-severity": "0.0"
+              },
+              "shortDescription": {
+                "text": "Variable names too similar"
+              },
+              "help": {
+                "text": "Prevent variables from having similar names."
+              }
+            },
+            {
+              "id": "3-1-too-many-digits",
+              "name": "too-many-digits",
+              "properties": {
+                "precision": "high",
+                "security-severity": "0.0"
+              },
+              "shortDescription": {
+                "text": "Too many digits"
+              },
+              "help": {
+                "text": "\nUse:\n- [Ether suffix](https://solidity.readthedocs.io/en/latest/units-and-global-variables.html#ether-units),\n- [Time suffix](https://solidity.readthedocs.io/en/latest/units-and-global-variables.html#time-units), or\n- [The scientific notation](https://solidity.readthedocs.io/en/latest/types.html#rational-and-integer-literals)\n"
+              }
+            },
+            {
+              "id": "4-0-external-function",
+              "name": "external-function",
+              "properties": {
+                "precision": "very-high",
+                "security-severity": "0.0"
+              },
+              "shortDescription": {
+                "text": "Public function that could be declared external"
+              },
+              "help": {
+                "text": "Use the `external` attribute for functions never called from the contract."
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "3-0-solc-version",
+          "message": {
+            "text": "Pragma version>0.8.4<=0.8.16 (contracts/Structs.sol#2) is too complex\n",
+            "markdown": "Pragma version[>0.8.4<=0.8.16](contracts/Structs.sol#L2) is too complex\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/Structs.sol"
+                },
+                "region": {
+                  "startLine": 2,
+                  "endLine": 2
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "f0f6e151f2a0810041fc554f1f6599ad375a1060bbcbb82a65e05e7c4c284ab5"
+          }
+        },
+        {
+          "ruleId": "3-0-solc-version",
+          "message": {
+            "text": "Pragma version>0.8.0<=0.9.0 (contracts/Enums.sol#3) is too complex\n",
+            "markdown": "Pragma version[>0.8.0<=0.9.0](contracts/Enums.sol#L3) is too complex\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/Enums.sol"
+                },
+                "region": {
+                  "startLine": 3,
+                  "endLine": 3
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "63d5058bfac17e6143322f23f61a61897c5bcf3e3a5261e001273e30a20db04c"
+          }
+        },
+        {
+          "ruleId": "2-1-timestamp",
+          "message": {
+            "text": "SimpleEmployment.autoWithdraw() (contracts/SimpleEmployment.sol#303-313) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(block.timestamp - lastPaymentMade.timeStamp > 2 * pactData.payScheduleDays * 86400000,Wait) (contracts/SimpleEmployment.sol#305)\n",
+            "markdown": "[SimpleEmployment.autoWithdraw()](contracts/SimpleEmployment.sol#L303-L313) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- [require(bool,string)(block.timestamp - lastPaymentMade.timeStamp > 2 * pactData.payScheduleDays * 86400000,Wait)](contracts/SimpleEmployment.sol#L305)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/SimpleEmployment.sol"
+                },
+                "region": {
+                  "startLine": 303,
+                  "endLine": 313
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "44f1ec713fa86e8f7002dc1c64e1c10228e0b103cdda89d7f32c1b0892b93c1d"
+          }
+        },
+        {
+          "ruleId": "2-1-timestamp",
+          "message": {
+            "text": "SimpleEmployment.terminate() (contracts/SimpleEmployment.sol#173-190) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- lockedAmt >= stakeAmount_ (contracts/SimpleEmployment.sol#180)\n\t- address(this).balance < refundAmount_ (contracts/SimpleEmployment.sol#185)\n",
+            "markdown": "[SimpleEmployment.terminate()](contracts/SimpleEmployment.sol#L173-L190) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- [lockedAmt >= stakeAmount_](contracts/SimpleEmployment.sol#L180)\n\t- [address(this).balance < refundAmount_](contracts/SimpleEmployment.sol#L185)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/SimpleEmployment.sol"
+                },
+                "region": {
+                  "startLine": 173,
+                  "endLine": 190
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "92359ef2ee1bc0d9e7b424e85424f96faa6cc819e68dd3b94ba717a84b08dece"
+          }
+        },
+        {
+          "ruleId": "2-1-timestamp",
+          "message": {
+            "text": "SimpleEmployment.reclaimStake(address) (contracts/SimpleEmployment.sol#293-301) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- require(bool,string)(stakeAmount <= address(this).balance,Low Balance) (contracts/SimpleEmployment.sol#295)\n",
+            "markdown": "[SimpleEmployment.reclaimStake(address)](contracts/SimpleEmployment.sol#L293-L301) uses timestamp for comparisons\n\tDangerous comparisons:\n\t- [require(bool,string)(stakeAmount <= address(this).balance,Low Balance)](contracts/SimpleEmployment.sol#L295)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/SimpleEmployment.sol"
+                },
+                "region": {
+                  "startLine": 293,
+                  "endLine": 301
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "f107cf9ccf88af133ea20e57a45f2e255480662858105bf2d6e29535423798ca"
+          }
+        },
+        {
+          "ruleId": "3-0-assembly",
+          "message": {
+            "text": "ECDSA.tryRecover(bytes32,bytes) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#57-74) uses assembly\n\t- INLINE ASM (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#65-69)\n",
+            "markdown": "[ECDSA.tryRecover(bytes32,bytes)](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L57-L74) uses assembly\n\t- [INLINE ASM](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L65-L69)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+                },
+                "region": {
+                  "startLine": 57,
+                  "endLine": 74
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "209a0b354fed01ecfa1c0b5b5a9a88cc5938c1cda815f8e8dc3d9fb604c6d7ca"
+          }
+        },
+        {
+          "ruleId": "3-0-pragma",
+          "message": {
+            "text": "Different versions of Solidity are used:\n\t- Version used: ['>0.8.0<=0.9.0', '>0.8.4<=0.8.16', '^0.8.0']\n\t- ^0.8.0 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4)\n\t- ^0.8.0 (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#4)\n\t- >0.8.0<=0.9.0 (contracts/Enums.sol#3)\n\t- >0.8.4<=0.8.16 (contracts/SimpleEmployment.sol#4)\n\t- >0.8.4<=0.8.16 (contracts/Structs.sol#2)\n",
+            "markdown": "Different versions of Solidity are used:\n\t- Version used: ['>0.8.0<=0.9.0', '>0.8.4<=0.8.16', '^0.8.0']\n\t- [^0.8.0](node_modules/@openzeppelin/contracts/utils/Strings.sol#L4)\n\t- [^0.8.0](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L4)\n\t- [>0.8.0<=0.9.0](contracts/Enums.sol#L3)\n\t- [>0.8.4<=0.8.16](contracts/SimpleEmployment.sol#L4)\n\t- [>0.8.4<=0.8.16](contracts/Structs.sol#L2)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/Strings.sol"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "2961a0a0a721ce55002a45c6f39ee22f27b57fd7d908c6adc9f3ebc53d070e80"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "Strings.toHexString(uint256,uint256) (node_modules/@openzeppelin/contracts/utils/Strings.sol#57-67) is never used and should be removed\n",
+            "markdown": "[Strings.toHexString(uint256,uint256)](node_modules/@openzeppelin/contracts/utils/Strings.sol#L57-L67) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/Strings.sol"
+                },
+                "region": {
+                  "startLine": 57,
+                  "endLine": 67
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "05313e6992f87a6d1d89b079375b62fb91075a506c7c19949a2ea82c0d5bce9d"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "Strings.toHexString(uint256) (node_modules/@openzeppelin/contracts/utils/Strings.sol#41-52) is never used and should be removed\n",
+            "markdown": "[Strings.toHexString(uint256)](node_modules/@openzeppelin/contracts/utils/Strings.sol#L41-L52) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/Strings.sol"
+                },
+                "region": {
+                  "startLine": 41,
+                  "endLine": 52
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "45d4f9a4d927bc2aad6e231d4b5cf418f77eddb18c64752b92493cd95fe00b16"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "Strings.toString(uint256) (node_modules/@openzeppelin/contracts/utils/Strings.sol#16-36) is never used and should be removed\n",
+            "markdown": "[Strings.toString(uint256)](node_modules/@openzeppelin/contracts/utils/Strings.sol#L16-L36) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/Strings.sol"
+                },
+                "region": {
+                  "startLine": 16,
+                  "endLine": 36
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "6c685c3bbe10a0695b2682cff302b1e938656ef929af899650aa4f3c45f765fd"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "ECDSA.toEthSignedMessageHash(bytes) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#202-204) is never used and should be removed\n",
+            "markdown": "[ECDSA.toEthSignedMessageHash(bytes)](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L202-L204) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+                },
+                "region": {
+                  "startLine": 202,
+                  "endLine": 204
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "874906a475dad6c36de1e8ba262a34b469419d024503b237fe39dce308d32c6f"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "ECDSA.toTypedDataHash(bytes32,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#215-217) is never used and should be removed\n",
+            "markdown": "[ECDSA.toTypedDataHash(bytes32,bytes32)](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L215-L217) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+                },
+                "region": {
+                  "startLine": 215,
+                  "endLine": 217
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "8aa1d43df70ee3f3bd6685917dc4ffd1fb148d22cf1bcd4d7b50607150ac4228"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "ECDSA.tryRecover(bytes32,bytes32,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#103-111) is never used and should be removed\n",
+            "markdown": "[ECDSA.tryRecover(bytes32,bytes32,bytes32)](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L103-L111) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+                },
+                "region": {
+                  "startLine": 103,
+                  "endLine": 111
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "b0d7ee3ebce613a8c97c170f7ef1092de886013ffeb44095dcaa44c1cfb480f3"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "Strings.toHexString(address) (node_modules/@openzeppelin/contracts/utils/Strings.sol#72-74) is never used and should be removed\n",
+            "markdown": "[Strings.toHexString(address)](node_modules/@openzeppelin/contracts/utils/Strings.sol#L72-L74) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/Strings.sol"
+                },
+                "region": {
+                  "startLine": 72,
+                  "endLine": 74
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "bf1a9bd2bd7723c8678437d00b3c5ddd5e5557611befd8beb1afdb472a320b07"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "ECDSA.recover(bytes32,uint8,bytes32,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#169-178) is never used and should be removed\n",
+            "markdown": "[ECDSA.recover(bytes32,uint8,bytes32,bytes32)](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L169-L178) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+                },
+                "region": {
+                  "startLine": 169,
+                  "endLine": 178
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "e2f1cd52a8b5d281dc9a7db4d3b6f7b1b35e31ecf47cfe9b4cc3b6ad2c5b63cc"
+          }
+        },
+        {
+          "ruleId": "3-1-dead-code",
+          "message": {
+            "text": "ECDSA.recover(bytes32,bytes32,bytes32) (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#118-126) is never used and should be removed\n",
+            "markdown": "[ECDSA.recover(bytes32,bytes32,bytes32)](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L118-L126) is never used and should be removed\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+                },
+                "region": {
+                  "startLine": 118,
+                  "endLine": 126
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "ebbee5cef7e660e059a94c714e1426db47a76dafea22bce0ded5aa0663c0b681"
+          }
+        },
+        {
+          "ruleId": "3-0-solc-version",
+          "message": {
+            "text": "Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#4) allows old versions\n",
+            "markdown": "Pragma version[^0.8.0](node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol#L4) allows old versions\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "06845140c4de83a67b7ea1fa3eefa5eaca6813a74e80720101c31e3c3af14ffc"
+          }
+        },
+        {
+          "ruleId": "3-0-solc-version",
+          "message": {
+            "text": "Pragma version^0.8.0 (node_modules/@openzeppelin/contracts/utils/Strings.sol#4) allows old versions\n",
+            "markdown": "Pragma version[^0.8.0](node_modules/@openzeppelin/contracts/utils/Strings.sol#L4) allows old versions\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "node_modules/@openzeppelin/contracts/utils/Strings.sol"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "39bb6de244e9d295e9aa6c566b0b6e8f01ba481f4efc9e16952394697f339857"
+          }
+        },
+        {
+          "ruleId": "3-0-solc-version",
+          "message": {
+            "text": "Pragma version>0.8.0<=0.9.0 (contracts/Enums.sol#3) is too complex\n",
+            "markdown": "Pragma version[>0.8.0<=0.9.0](contracts/Enums.sol#L3) is too complex\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/Enums.sol"
+                },
+                "region": {
+                  "startLine": 3,
+                  "endLine": 3
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "63d5058bfac17e6143322f23f61a61897c5bcf3e3a5261e001273e30a20db04c"
+          }
+        },
+        {
+          "ruleId": "3-0-solc-version",
+          "message": {
+            "text": "Pragma version>0.8.4<=0.8.16 (contracts/SimpleEmployment.sol#4) is too complex\n",
+            "markdown": "Pragma version[>0.8.4<=0.8.16](contracts/SimpleEmployment.sol#L4) is too complex\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/SimpleEmployment.sol"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "e9badeba6838473607fb7600eeee03d5a591e5679f9b079e30f53431cb8a7af7"
+          }
+        },
+        {
+          "ruleId": "3-0-solc-version",
+          "message": {
+            "text": "Pragma version>0.8.4<=0.8.16 (contracts/Structs.sol#2) is too complex\n",
+            "markdown": "Pragma version[>0.8.4<=0.8.16](contracts/Structs.sol#L2) is too complex\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/Structs.sol"
+                },
+                "region": {
+                  "startLine": 2,
+                  "endLine": 2
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "f0f6e151f2a0810041fc554f1f6599ad375a1060bbcbb82a65e05e7c4c284ab5"
+          }
+        },
+        {
+          "ruleId": "3-1-similar-names",
+          "message": {
+            "text": "Variable SimpleEmployment.isEmployeeDelegate (contracts/SimpleEmployment.sol#28) is too similar to SimpleEmployment.isEmployerDelegate (contracts/SimpleEmployment.sol#29)\n",
+            "markdown": "Variable [SimpleEmployment.isEmployeeDelegate](contracts/SimpleEmployment.sol#L28) is too similar to [SimpleEmployment.isEmployerDelegate](contracts/SimpleEmployment.sol#L29)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/SimpleEmployment.sol"
+                },
+                "region": {
+                  "startLine": 28,
+                  "endLine": 28
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "da81efa33c639101197f48fb5781e0cecec3562337f6e207f6fcabd48fe37254"
+          }
+        },
+        {
+          "ruleId": "3-1-too-many-digits",
+          "message": {
+            "text": "SimpleEmployment.autoWithdraw() (contracts/SimpleEmployment.sol#303-313) uses literals with too many digits:\n\t- require(bool,string)(block.timestamp - lastPaymentMade.timeStamp > 2 * pactData.payScheduleDays * 86400000,Wait) (contracts/SimpleEmployment.sol#305)\n",
+            "markdown": "[SimpleEmployment.autoWithdraw()](contracts/SimpleEmployment.sol#L303-L313) uses literals with too many digits:\n\t- [require(bool,string)(block.timestamp - lastPaymentMade.timeStamp > 2 * pactData.payScheduleDays * 86400000,Wait)](contracts/SimpleEmployment.sol#L305)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/SimpleEmployment.sol"
+                },
+                "region": {
+                  "startLine": 303,
+                  "endLine": 313
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "e1f15e13a967af61ad3bd01d9fe5ed69187ccb20989f7e2ff4d59c37449e8cf8"
+          }
+        },
+        {
+          "ruleId": "4-0-external-function",
+          "message": {
+            "text": "arbitratorResolve() should be declared external:\n\t- SimpleEmployment.arbitratorResolve() (contracts/SimpleEmployment.sol#274-290)\n",
+            "markdown": "arbitratorResolve() should be declared external:\n\t- [SimpleEmployment.arbitratorResolve()](contracts/SimpleEmployment.sol#L274-L290)\n"
+          },
+          "level": "warning",
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "contracts/SimpleEmployment.sol"
+                },
+                "region": {
+                  "startLine": 274,
+                  "endLine": 290
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "id": "f8dae0d23561b0226e66faa23a426c66fa81140648e0f0a1e1dcdcf621e2f721"
+          }
+        }
+      ]
+    }
+  ]
+}

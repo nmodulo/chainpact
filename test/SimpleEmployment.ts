@@ -8,7 +8,7 @@ const formatBytes32String = ethers.utils.formatBytes32String
 
 
 enum PactState {
-  DEPLOYED, RETRACTED, EMPLOYER_SIGNED, EMPLOYEE_SIGNED, ALL_SIGNED, ACTIVE, PAUSED, TERMINATED, RESIGNED, END_ACCEPTED, FNF_EMPLOYER, FNF_EMPLOYEE, DISPUTED, ARBITRATED, FNF_SETTLED, DISPUTE_RESOLVED, ENDED
+  DEPLOYED, RETRACTED, EMPLOYER_SIGNED, EMPLOYEE_SIGNED, ALL_SIGNED, ACTIVE, PAUSED, TERMINATED, RESIGNED, END_ACCEPTED, fNf_EMPLOYER, fNf_EMPLOYEE, DISPUTED, ARBITRATED, fNf_SETTLED, DISPUTE_RESOLVED, ENDED
 }
 
 
@@ -49,12 +49,12 @@ async function deployToDisputePact(suggestedAmt: BigNumberish) {
   await pact.connect(employee).delegate([employeeDelegate.address], true)
   await pact.connect(employerDelegate).start()
   await pact.connect(employerDelegate).terminate()
-  await pact.connect(employerDelegate).FnF({ value: suggestedAmt })
+  await pact.connect(employerDelegate).fNf({ value: suggestedAmt })
   await pact.connect(employeeDelegate).dispute(suggestedAmt)
   return pact
 }
 
-const [testDeploy, testSigning, testPactions, testdispute] = [true, true, true, true]
+const [testDeploy, testSigning, testPactions, testdispute] = [false, false, true, false]
 
 describe("SimpleEmployment", function () {
 
@@ -147,6 +147,7 @@ describe("SimpleEmployment", function () {
       })
 
     })
+
   if (testPactions)
     describe("Pact Actions", function () {
       it("should allow starting a pact", async function () {
@@ -171,6 +172,11 @@ describe("SimpleEmployment", function () {
         let payAmount = (await pact.pactData()).payAmount
         await pact.approvePayment({ value: payAmount })
         expect(balanceBefore.add(payAmount)).to.eq((await employee.getBalance()))
+        let lastPayment = await pact.lastPaymentMade()
+        console.log("Last Payment made")
+        console.log(lastPayment)
+        console.log(lastPayment.timeStamp)
+        console.log((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp)
       })
       it("should not allow pay on non-active pact", async function () {
         let pact = await deployAndSignRandomPact()
@@ -242,11 +248,11 @@ describe("SimpleEmployment", function () {
         await pact.approveResign()
         expect(await pact.pactState()).to.eq(PactState.END_ACCEPTED)
 
-        await pact.FnF()
-        expect(await pact.pactState()).to.eq(PactState.FNF_EMPLOYER)
+        await pact.fNf()
+        expect(await pact.pactState()).to.eq(PactState.fNf_EMPLOYER)
 
-        await pact.connect(employee).FnF()
-        expect(await pact.pactState()).to.eq(PactState.FNF_SETTLED)
+        await pact.connect(employee).fNf()
+        expect(await pact.pactState()).to.eq(PactState.fNf_SETTLED)
 
         let balanceBefore = await employer.getBalance()
         let stakeAmount = await pact.stakeAmount()
@@ -264,7 +270,7 @@ describe("SimpleEmployment", function () {
 
   if (testdispute)
     describe("Dispute", function () {
-      it("should allow employee to raise a dispute on terminate and FNF", async function () {
+      it("should allow employee to raise a dispute on terminate and fNf", async function () {
         let pact = await deployAndSignRandomPact()
         await pact.delegate([employerDelegate.address], true)
         await pact.connect(employee).delegate([employeeDelegate.address], true)
@@ -284,8 +290,8 @@ describe("SimpleEmployment", function () {
         await pact.connect(employee).delegate([employeeDelegate.address], true)
         await pact.connect(employerDelegate).start()
         await pact.connect(employerDelegate).terminate()
-        await pact.connect(employerDelegate).FnF({ value: suggestedAmt })
-        expect(await pact.pactState()).to.eq(PactState.FNF_EMPLOYER)
+        await pact.connect(employerDelegate).fNf({ value: suggestedAmt })
+        expect(await pact.pactState()).to.eq(PactState.fNf_EMPLOYER)
         await pact.connect(employeeDelegate).dispute(suggestedAmt)
         expect(await pact.pactState()).to.eq(PactState.DISPUTED)
 
@@ -346,14 +352,14 @@ describe("SimpleEmployment", function () {
 
         await expect(pact.connect(employee).dispute(suggestedAmt)).to.be.reverted
       })
-      it("should allow fnf to both parties during arbitration and no dispute", async function () {
+      it("should allow fNf to both parties during arbitration and no dispute", async function () {
         let suggestedAmt = BigNumber.from(100)
         let pact = await deployToDisputePact(suggestedAmt)
         await pact.connect(employee).proposeArbitrators([arbitrator1.address, arbitrator2.address])
         await pact.connect(employer).acceptOrRejectArbitrators(true)
         expect(await pact.pactState()).to.eq(PactState.ARBITRATED)
-        await expect(await pact.FnF({ value: 100 })).to.not.be.reverted
-        await expect(await pact.connect(employee).FnF({ value: 100 })).to.not.be.reverted
+        await expect(await pact.fNf({ value: 100 })).to.not.be.reverted
+        await expect(await pact.connect(employee).fNf({ value: 100 })).to.not.be.reverted
       })
     })
 });

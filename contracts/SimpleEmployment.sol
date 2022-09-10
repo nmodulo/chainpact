@@ -1,29 +1,32 @@
 //SPDX-License-Identifier: MIT
 
-import "hardhat/console.sol";
-pragma solidity > 0.8.0  <= 0.9.0;
+// import "hardhat/console.sol";
+pragma solidity > 0.8.4  <= 0.8.16;
 
-import "./ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Structs.sol";
 import "./Enums.sol";
 
 contract SimpleEmployment {
 
+    event LogPaymentMade(uint value, address payer);
+    event LogStateUpdate(PactState newState, address updater);
+
     //Core Data
     CoreData public pactData;
-    uint256 employeeSignDate;
+    uint256 public employeeSignDate;
 
     //BAU
     PactState public pactState;
     uint public stakeAmount;
-    Payment lastPaymentMade;
-    Dispute disputeData;
-    uint pauseDuration;
-    uint pauseResumeTime;
+    Payment public lastPaymentMade;
+    Dispute public disputeData;
+    uint public pauseDuration;
+    uint public pauseResumeTime;
 
     //Constraint flags
-    mapping (address => bool) isEmployeeDelegate;
-    mapping (address => bool) isEmployerDelegate;
+    mapping (address => bool) public isEmployeeDelegate;
+    mapping (address => bool) public isEmployerDelegate;
 
     //modifiers
     modifier onlyEmployer{
@@ -43,6 +46,11 @@ contract SimpleEmployment {
 
     modifier isActive{
         require(pactState == PactState.ACTIVE, "not active");
+        _;
+    }
+
+    modifier isEOA{
+        require(msg.sender == tx.origin);
         _;
     }
 
@@ -126,37 +134,43 @@ contract SimpleEmployment {
         require(pactState == PactState.ALL_SIGNED);
         pactState = PactState.ACTIVE;
         lastPaymentMade.timeStamp = uint128(block.timestamp);
+        emit LogStateUpdate(PactState.ACTIVE, msg.sender);
     }
 
     function pause() external onlyParties isActive{
         pactState = PactState.PAUSED;
         pauseResumeTime = block.timestamp;
+        emit LogStateUpdate(PactState.PAUSED, msg.sender);
     }
 
     function resume() external onlyParties{
         require(pactState == PactState.PAUSED);
         pactState = PactState.ACTIVE;
-        pauseDuration = block.timestamp - pauseResumeTime;
+        pauseDuration += block.timestamp - pauseResumeTime;
         pauseResumeTime = block.timestamp;
+        emit LogStateUpdate(PactState.ACTIVE, msg.sender);
     }
 
     function approvePayment() external payable onlyEmployer isActive{
         require(msg.value >= pactData.payAmount, "Amount less than payAmount");
         lastPaymentMade = Payment({timeStamp: uint128(block.timestamp), amount: uint128(msg.value)});
         pauseDuration = 0;
+        emit LogPaymentMade(msg.value, msg.sender);
         payable(pactData.employee).transfer(msg.value);
     }
 
     function resign() external onlyEmployee isActive{
         pactState = PactState.RESIGNED;
+        emit LogStateUpdate(PactState.RESIGNED, msg.sender);
     }
 
     function approveResign() external onlyEmployer{
         require(pactState == PactState.RESIGNED, "Not Resigned");
         pactState = PactState.END_ACCEPTED;
+        emit LogStateUpdate(PactState.END_ACCEPTED, msg.sender);
     }
 
-    function terminate() external onlyEmployer isActive{
+    function terminate() external onlyEmployer isEOA isActive{
         pactState = PactState.TERMINATED;
         uint stakeAmount_ = stakeAmount;
 
@@ -171,46 +185,58 @@ contract SimpleEmployment {
         if(address(this).balance < refundAmount_){
             return;
         }
+        emit LogStateUpdate(PactState.TERMINATED, msg.sender);
         payable(msg.sender).transfer(refundAmount_);
     }
 
     /* Full and Final Settlement FnF can be initiated by both parties in case they owe something.*/
-    function FnF() external payable{
-        PactState pactState_ = pactState;
+    function fNf() external payable{
+        PactState oldPactState_ = pactState;
+        PactState pactState_ = oldPactState_;
+        address receiver = address(0);
+
         require(pactState_ >= PactState.TERMINATED && pactState_ <= PactState.ENDED, "Check State");
         
         if(isEmployeeDelegate[msg.sender]){
-            if(msg.value > 0) payable(pactData.employer).transfer(msg.value);
-            if(pactState_ == PactState.TERMINATED){
-                pactState = PactState.FNF_EMPLOYEE;
+            if(pactState_ == PactState.TERMINATED || pactState_ == PactState.END_ACCEPTED){
+                pactState_ = PactState.FNF_EMPLOYEE;
             }
-            if(pactState_ == PactState.DISPUTED || pactState_ == PactState.ARBITRATED){
-                pactState = PactState.DISPUTE_RESOLVED;
+            else if(pactState_ == PactState.DISPUTED || pactState_ == PactState.ARBITRATED){
+                pactState_ = PactState.DISPUTE_RESOLVED;
             }
-            if(pactState_ == PactState.FNF_EMPLOYER){
-                pactState = PactState.FNF_SETTLED;
+            else if(pactState_ == PactState.FNF_EMPLOYER){
+                pactState_ = PactState.FNF_SETTLED;
             }
-
+            if(msg.value > 0){
+                receiver = pactData.employer;
+            }
         }
 
         else if(isEmployerDelegate[msg.sender]){
             if(pactState_ == PactState.TERMINATED || pactState_ == PactState.END_ACCEPTED){
-                pactState = PactState.FNF_EMPLOYER;
+                pactState_ = PactState.FNF_EMPLOYER;
             }
-            if(pactState == PactState.FNF_EMPLOYEE){
-                pactState = PactState.FNF_SETTLED;
+            else if(pactState == PactState.FNF_EMPLOYEE){
+                pactState_ = PactState.FNF_SETTLED;
             }
             if(msg.value > 0){
                 if(pactState == PactState.DISPUTED && msg.value >= disputeData.proposedAmount){
-                    pactState = PactState.FNF_SETTLED;
+                    pactState_ = PactState.FNF_SETTLED;
                 }
-                payable(pactData.employee).transfer(msg.value);
+                receiver = pactData.employee;
             } 
-
         }
 
         else{
             revert("Unauthorized");
+        }
+        if(oldPactState_ != pactState_){
+            pactState = pactState_;
+            emit LogStateUpdate(pactState_, msg.sender);
+        }
+        if(receiver != address(0)){
+            emit LogPaymentMade(msg.value, msg.sender);
+            payable(receiver).transfer(msg.value);
         }
     }
 
@@ -218,12 +244,15 @@ contract SimpleEmployment {
         require(pactState == PactState.FNF_EMPLOYER);
         pactState = PactState.DISPUTED;
         disputeData.proposedAmount = uint128(suggestedAmountClaim);
+        emit LogStateUpdate(PactState.DISPUTED, msg.sender);
     }
 
     function proposeArbitrators(address[] calldata proposedArbitrators_) external onlyParties{
         require(!(disputeData.arbitratorAccepted), "Already Accepted");
-        pactState = PactState.ARBITRATED;
+        require(proposedArbitrators_.length > 0);
+        require(pactState == PactState.DISPUTED, "Not Disputed");
         disputeData.arbitratorProposer = msg.sender;
+        disputeData.arbitratorProposed = true;
         delete disputeData.proposedArbitrators;
         for(uint i=0; i<proposedArbitrators_.length; i++){
             disputeData.proposedArbitrators.push(Arbitrator({addr: proposedArbitrators_[i], hasResolved: false}));
@@ -231,7 +260,7 @@ contract SimpleEmployment {
     }
 
     function acceptOrRejectArbitrators(bool acceptOrReject) external onlyParties{
-        require(pactState == PactState.ARBITRATED, "Not arbitrated");
+        require(pactState == PactState.DISPUTED && disputeData.arbitratorProposed);
 
         if(isEmployeeDelegate[disputeData.arbitratorProposer]){
             require(isEmployerDelegate[msg.sender]);
@@ -239,7 +268,18 @@ contract SimpleEmployment {
             require(isEmployeeDelegate[msg.sender]);
         }
         disputeData.arbitratorAccepted = acceptOrReject;
-        if(!acceptOrReject) disputeData.arbitratorProposed = false;
+        if(!acceptOrReject){
+            disputeData.arbitratorProposed = false;
+            delete disputeData.proposedArbitrators;
+        } 
+        else {
+            pactState = PactState.ARBITRATED;
+            emit LogStateUpdate(PactState.ARBITRATED, msg.sender);
+        }
+    }
+
+    function getArbitratorsList() external view returns(Arbitrator[] memory arbitrators){
+        return disputeData.proposedArbitrators;
     }
 
     function arbitratorResolve() public{
@@ -256,15 +296,21 @@ contract SimpleEmployment {
         } 
         if(allResolved){
             pactState = PactState.DISPUTE_RESOLVED;
+            emit LogStateUpdate(PactState.DISPUTE_RESOLVED, msg.sender);
         }
     }
 
     /** To get the remaining stake by the employer when the contract has been ended. */
-    function reclaimStake(address payable payee) external onlyEmployer{
+    function reclaimStake(address payable payee) external onlyEmployer isEOA{
         require(pactState >= PactState.FNF_SETTLED);
-        require(stakeAmount <= address(this).balance, "Low Balance");
+        uint stakeAmount_ = stakeAmount;
+        require(stakeAmount_ <= address(this).balance, "Low Balance");
+        require(payee != address(0));
         pactState = PactState.ENDED;
-        payee.transfer(stakeAmount);
+        emit LogPaymentMade(stakeAmount_, address(this));
+        emit LogStateUpdate(PactState.ENDED, msg.sender);
+        stakeAmount = 0;
+        payee.transfer(stakeAmount_);
     }
 
     function autoWithdraw() external onlyEmployee{
@@ -272,9 +318,11 @@ contract SimpleEmployment {
         require(block.timestamp - lastPaymentMade.timeStamp > 2*pactData.payScheduleDays*86400000, "Wait");
         uint stakeAmount_ = stakeAmount;
         stakeAmount = 0;
-        payable(msg.sender).transfer(stakeAmount_);
         lastPaymentMade = Payment({amount: uint128(stakeAmount_), timeStamp: uint128(block.timestamp)});
         pactState = PactState.PAUSED;
+        emit LogStateUpdate(PactState.PAUSED, msg.sender);
+        emit LogPaymentMade(stakeAmount_, address(this));
+        payable(pactData.employee).transfer(stakeAmount_);
     }
 
     function contractDataHash(uint256 signingDate_) public view returns (bytes32){
@@ -295,7 +343,8 @@ contract SimpleEmployment {
     }
 
     /** Allows for destryoing the contract in case something has gone wrong */
-    function destroy() external onlyEmployer{
+    function destroy() external{
+        require(msg.sender == pactData.employer);
         require(pactState == PactState.ENDED || pactState == PactState.DEPLOYED);
         selfdestruct(payable(msg.sender));
     }
