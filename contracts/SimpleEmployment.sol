@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 
 // import "hardhat/console.sol";
-pragma solidity > 0.8.4  <= 0.8.16;
+pragma solidity > 0.8.4  <= 0.8.17;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Structs.sol";
@@ -10,6 +10,7 @@ import "./Enums.sol";
 contract SimpleEmployment {
 
     event LogPaymentMade(uint value, address payer);
+    event LogPaymentWithdrawn(uint value, address payee);
     event LogStateUpdate(PactState newState, address updater);
 
     //Core Data
@@ -19,6 +20,7 @@ contract SimpleEmployment {
     //BAU
     PactState public pactState;
     uint public stakeAmount;
+    uint public availableToWithdraw;
     Payment public lastPaymentMade;
     Dispute public disputeData;
     uint public pauseDuration;
@@ -133,7 +135,7 @@ contract SimpleEmployment {
     function start() external onlyEmployer{
         require(pactState == PactState.ALL_SIGNED);
         pactState = PactState.ACTIVE;
-        lastPaymentMade.timeStamp = uint128(block.timestamp);
+        lastPaymentMade = Payment({amount: uint128(0), timeStamp: uint120(block.timestamp)});
         emit LogStateUpdate(PactState.ACTIVE, msg.sender);
     }
 
@@ -153,10 +155,21 @@ contract SimpleEmployment {
 
     function approvePayment() external payable onlyEmployer isActive{
         require(msg.value >= pactData.payAmount, "Amount less than payAmount");
-        lastPaymentMade = Payment({timeStamp: uint128(block.timestamp), amount: uint128(msg.value)});
+        lastPaymentMade = Payment({timeStamp: uint120(block.timestamp), amount: uint128(msg.value)});
+        availableToWithdraw += msg.value;
         pauseDuration = 0;
         emit LogPaymentMade(msg.value, msg.sender);
-        payable(pactData.employee).transfer(msg.value);
+    }
+
+    function withdrawPayment(uint value) external onlyEmployee isActive{
+        require(availableToWithdraw >= value && availableToWithdraw > 0, "Payment not available");
+        uint withdrawAmt = value;
+        if(withdrawAmt == 0){
+            withdrawAmt = availableToWithdraw;
+        }
+        availableToWithdraw -= withdrawAmt;
+        emit LogPaymentWithdrawn(withdrawAmt, msg.sender);
+        payable(pactData.employee).transfer(withdrawAmt);
     }
 
     function resign() external onlyEmployee isActive{
@@ -318,7 +331,7 @@ contract SimpleEmployment {
         require(block.timestamp - lastPaymentMade.timeStamp > 2*pactData.payScheduleDays*86400000, "Wait");
         uint stakeAmount_ = stakeAmount;
         stakeAmount = 0;
-        lastPaymentMade = Payment({amount: uint128(stakeAmount_), timeStamp: uint128(block.timestamp)});
+        lastPaymentMade = Payment({amount: uint128(stakeAmount_), timeStamp: uint120(block.timestamp)});
         pactState = PactState.PAUSED;
         emit LogStateUpdate(PactState.PAUSED, msg.sender);
         emit LogPaymentMade(stakeAmount_, address(this));

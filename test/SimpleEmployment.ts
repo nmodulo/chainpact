@@ -165,18 +165,22 @@ describe("SimpleEmployment", function () {
         await pact.start()
         await expect(pact.start()).to.be.revertedWithoutReason()
       })
-      it("should allow pay on active pact", async function () {
+      it("should record last Payment Made, and let withdraw", async function () {
         let pact = await deployAndSignRandomPact()
         await pact.start()
-        let balanceBefore = await employee.getBalance()
+        let availableBefore = await pact.availableToWithdraw()
         let payAmount = (await pact.pactData()).payAmount
         await pact.approvePayment({ value: payAmount })
-        expect(balanceBefore.add(payAmount)).to.eq((await employee.getBalance()))
+        expect(availableBefore.add(payAmount)).to.eq(await pact.availableToWithdraw())
         let lastPayment = await pact.lastPaymentMade()
-        console.log("Last Payment made")
-        console.log(lastPayment)
-        console.log(lastPayment.timeStamp)
-        console.log((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp)
+        expect(lastPayment.timeStamp).to.eq((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp)
+        expect(lastPayment.amount).to.eq(payAmount)
+
+        let balanceBefore = await ethers.provider.getBalance(employee.address)
+        let txReceipt = await (await pact.connect(employee).withdrawPayment(payAmount.div(2))).wait()
+        expect(balanceBefore.add(payAmount.div(2))).to.eq(
+          (await ethers.provider.getBalance(employee.address))
+            .add(txReceipt.cumulativeGasUsed.mul(txReceipt.effectiveGasPrice)))
       })
       it("should not allow pay on non-active pact", async function () {
         let pact = await deployAndSignRandomPact()
@@ -265,8 +269,6 @@ describe("SimpleEmployment", function () {
         expect(await pact.pactState()).to.eq(PactState.ENDED)
       })
     })
-
-
 
   if (testdispute)
     describe("Dispute", function () {

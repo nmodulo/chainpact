@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity >0.8.4 <=0.8.16;
+pragma solidity >0.8.4 <= 0.8.17;
 
 struct CoreData {
     bytes32 pactName;
@@ -16,7 +16,7 @@ struct Arbitrator {
 
 struct Payment {
     uint128 amount;
-    uint128 timeStamp;
+    uint120 timeStamp;
 }
 
 struct Dispute {
