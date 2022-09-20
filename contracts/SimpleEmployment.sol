@@ -341,12 +341,13 @@ contract SimpleEmployment {
     function contractDataHash(uint256 signingDate_) public view returns (bytes32){
         return keccak256(abi.encodePacked(
             "ChainPact - I hereby sign the following ",
-            pactData.employee, 
-            pactData.employer, 
-            pactData.payScheduleDays,
-            pactData.payAmount,
-            signingDate_,
-            address(this)));
+            "For this pact named ", pactData.pactName,
+            "Employee ", pactData.employee, 
+            "Employer ", pactData.employer, 
+            "Pay Schedule in days ", pactData.payScheduleDays,
+            "payAmount in native ", pactData.payAmount,
+            "Signing DateTime ", signingDate_,
+            "Address of this contract ", address(this)));
     }
 
     function recoverContractSigner(bytes memory signature, uint256 signingDate_) public view returns (address){

@@ -54,6 +54,25 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "payee",
+        "type": "address"
+      }
+    ],
+    "name": "LogPaymentWithdrawn",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "enum PactState",
         "name": "newState",
         "type": "uint8"
@@ -107,6 +126,19 @@
     "name": "autoWithdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "availableToWithdraw",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -335,9 +367,9 @@
         "type": "uint128"
       },
       {
-        "internalType": "uint128",
+        "internalType": "uint120",
         "name": "timeStamp",
-        "type": "uint128"
+        "type": "uint120"
       }
     ],
     "stateMutability": "view",
@@ -522,6 +554,19 @@
   {
     "inputs": [],
     "name": "terminate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawPayment",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
