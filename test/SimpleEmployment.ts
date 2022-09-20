@@ -20,7 +20,7 @@ async function setSigners() {
 
 // async function deployPact(args: [any, string, string, string, any]){
 async function deployPact(args: [pactName: string, employee: string, employer: string, paySchedule: string, payAmount: any]) {
-  let pactFactory = await ethers.getContractFactory("SimpleEmployment")
+  let pactFactory = await ethers.getContractFactory("SimpleGigPact")
   return pactFactory.deploy(...args)
 }
 
@@ -56,7 +56,7 @@ async function deployToDisputePact(suggestedAmt: BigNumberish) {
 
 const [testDeploy, testSigning, testPactions, testdispute] = [false, false, true, false]
 
-describe("SimpleEmployment", function () {
+describe("SimpleGigPact", function () {
 
   this.beforeAll(async () => {
     await setSigners()

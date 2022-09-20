@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Structs.sol";
 import "./Enums.sol";
 
-contract SimpleEmployment {
+contract SimpleGigPact {
 
     event LogPaymentMade(uint value, address payer);
     event LogPaymentWithdrawn(uint value, address payee);
