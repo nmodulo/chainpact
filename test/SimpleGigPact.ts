@@ -54,7 +54,7 @@ async function deployToDisputePact(suggestedAmt: BigNumberish) {
   return pact
 }
 
-const [testDeploy, testSigning, testPactions, testdispute] = [false, false, true, false]
+const [testDeploy, testSigning, testPactions, testdispute] = [false, false, false, false]
 
 describe("SimpleGigPact", function () {
 
