@@ -5,7 +5,7 @@ import "hardhat-abi-exporter";
 const config: HardhatUserConfig = {
   solidity: "0.8.16",
   gasReporter: {
-    enabled: true
+    enabled: false
   },
 };
 

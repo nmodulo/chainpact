@@ -1,11 +1,32 @@
 pragma solidity >=0.8.0 <0.9.0;
 //SPDX-License-Identifier: MIT
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 import "./Structs.sol";
 
 // import "@openzeppelin/contracts/access/Ownable.sol";
 // https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol
+
+enum BeneficiaryType{
+    NONE,
+    YES,
+    NO
+}
+
+struct Participant{
+    address addr;
+    bool canVote;
+    BeneficiaryType beneficiaryType;
+}
+
+struct PactData {
+    bool isEditable;
+    uint64 maturityTimeStamp;
+    string pactText;
+    uint totalValue;
+    bool votingEnabled;
+    Participant[] participants;
+}
 
 contract WordPact {
     //Data
@@ -28,18 +49,16 @@ contract WordPact {
 
     function createPact(
         bool isEditable_,
-        string memory pactText_,
+        string calldata pactText_,
         uint256 maturityTimeStamp_,
         bool votingEnabled_,
         address[] calldata particpantAddresses_,
         bool[] calldata participantsCanVoteArray_,
-        uint64[] calldata voteWeights_,
         BeneficiaryType[] calldata beneficiaryTypes_
     ) external payable returns (bytes32 uid) {
         uint participantCount = particpantAddresses_.length;
         require(
           participantsCanVoteArray_.length == participantCount &&
-          voteWeights_.length == participantCount &&
           beneficiaryTypes_.length == participantCount
         );
 
@@ -55,7 +74,6 @@ contract WordPact {
             Participant(
             particpantAddresses_[i],
             participantsCanVoteArray_[i],
-            voteWeights_[i],
             beneficiaryTypes_[i]
           ));
         }
