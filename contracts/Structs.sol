@@ -26,3 +26,25 @@ struct Dispute {
     bool    arbitratorAccepted;
     Arbitrator[] proposedArbitrators;
 }
+
+struct PactData {
+    bool isEditable;
+    uint64 maturityTimeStamp;
+    string pactText;
+    uint totalValue;
+    bool votingEnabled;
+    Participant[] participants;
+}
+
+enum BeneficiaryType{
+    NONE,
+    YES,
+    NO
+}
+
+struct Participant{
+    address addr;
+    bool canVote;
+    uint64 voteWeightTwoDecimals;
+    BeneficiaryType beneficiaryType;
+}
