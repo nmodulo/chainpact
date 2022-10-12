@@ -22,6 +22,7 @@ struct Participant {
 struct PactData {
     bool isEditable;
     bool votingEnabled;
+    bool refundOnVotedNo;
     uint32 yesVotes;
     uint32 noVotes;
     uint64 maturityTimeStamp;
@@ -39,6 +40,7 @@ contract WordPact {
 
     mapping(bytes32 => mapping(address => uint256)) public contributions;
     mapping(bytes32 => mapping(address => bool)) canWithdraw;
+    mapping(bytes32 => bool) canWithdrawContribution;
     mapping(bytes32 => mapping(address => bool)) canVote;
     mapping(bytes32 => mapping(address => bool)) hasVoted;
     mapping(bytes32 => uint) minVotingContribution;
@@ -138,6 +140,14 @@ contract WordPact {
         payable(msg.sender).transfer(amountToSend);
     }
 
+    function withdrawContribution(bytes32 pactid) external {
+        if(canWithdrawContribution[pactid]){
+            uint contri = contributions[pactid][msg.sender];
+            contributions[pactid][msg.sender] = 0;
+            payable(msg.sender).transfer(contri);
+        }
+    }
+
     function startVotingWindow(bytes32 pactid, uint64 endTimeSeconds) external {
         require(!votingActive[pactid], "Already active");
         require(pacts[pactid].creator == msg.sender, "Unauthorized");
@@ -168,6 +178,11 @@ contract WordPact {
         else pacts[pactid].noVotes += 1;
     }
 
+    function setRefundOnVotedNo(bytes32 pactid, bool ifRefundOnVotedNo) external{
+        require(msg.sender == pacts[pactid].creator, "Unauthorized");
+        pacts[pactid].refundOnVotedNo = ifRefundOnVotedNo;
+    }
+
     function endVoting(bytes32 pactid) public {
         require( hasVoted[pactid][msg.sender] || msg.sender == pacts[pactid].creator, "acc has not voted");
         votingActive[pactid] = false;
@@ -176,8 +191,6 @@ contract WordPact {
         uint noVotes = pacts[pactid].noVotes;
 
         // Participant[] memory participants_ = pacts[pactid].participants;
-
-
         uint numParticipants = pacts[pactid].participants.length;
         address[] memory yesBeneficiaries = new address[](numParticipants);
         address[] memory noBeneficiaries = new address[](numParticipants);
@@ -204,6 +217,10 @@ contract WordPact {
                     payable(yesBeneficiaries[i]).transfer(amountToSend);
                 }
             }
+        } else if(pacts[pactid].refundOnVotedNo){
+            console.log("Refundonvotedno");
+            canWithdrawContribution[pactid] = true;
+            return;
         } else {
             uint divisions = noBeneficiariesCount;
             if (divisions != 0) {
