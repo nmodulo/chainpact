@@ -135,6 +135,73 @@
         "type": "address"
       }
     ],
+    "name": "canVote",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "canWithdraw",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "canWithdrawContribution",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
     "name": "contributions",
     "outputs": [
       {
@@ -160,7 +227,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "secondsToMaturity_",
+        "name": "maturityTimestamp_",
         "type": "uint256"
       },
       {
@@ -259,12 +326,12 @@
           },
           {
             "internalType": "uint64",
-            "name": "maturityTimeStamp",
+            "name": "maturityTimestamp",
             "type": "uint64"
           },
           {
             "internalType": "uint64",
-            "name": "votingEndTimeStamp",
+            "name": "votingEndTimestamp",
             "type": "uint64"
           },
           {
@@ -319,6 +386,49 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "hasVoted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "minVotingContribution",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
       }
     ],
     "name": "pacts",
@@ -350,12 +460,12 @@
       },
       {
         "internalType": "uint64",
-        "name": "maturityTimeStamp",
+        "name": "maturityTimestamp",
         "type": "uint64"
       },
       {
         "internalType": "uint64",
-        "name": "votingEndTimeStamp",
+        "name": "votingEndTimestamp",
         "type": "uint64"
       },
       {
@@ -473,6 +583,25 @@
     "name": "voteOnPact",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "votingActive",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {

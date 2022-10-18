@@ -25,8 +25,8 @@ struct PactData {
     bool refundOnVotedNo;
     uint32 yesVotes;
     uint32 noVotes;
-    uint64 maturityTimeStamp;
-    uint64 votingEndTimeStamp;
+    uint64 maturityTimestamp;
+    uint64 votingEndTimestamp;
     address creator;
     uint256 totalValue;
     Participant[] participants;
@@ -39,12 +39,12 @@ contract WordPact {
     uint64 public pactsCounter;
 
     mapping(bytes32 => mapping(address => uint256)) public contributions;
-    mapping(bytes32 => mapping(address => bool)) canWithdraw;
-    mapping(bytes32 => bool) canWithdrawContribution;
-    mapping(bytes32 => mapping(address => bool)) canVote;
-    mapping(bytes32 => mapping(address => bool)) hasVoted;
-    mapping(bytes32 => uint) minVotingContribution;
-    mapping(bytes32 => bool) votingActive;
+    mapping(bytes32 => mapping(address => bool)) public canWithdraw;
+    mapping(bytes32 => bool) public canWithdrawContribution;
+    mapping(bytes32 => mapping(address => bool)) public canVote;
+    mapping(bytes32 => mapping(address => bool)) public hasVoted;
+    mapping(bytes32 => uint) public minVotingContribution;
+    mapping(bytes32 => bool) public votingActive;
     event logContribution(bytes32 uid, address payer, uint256 amount);
     event logPactCreated(address creator, bytes32 uid);
     event logVotingStarted(bytes32 uid);
@@ -63,7 +63,7 @@ contract WordPact {
     function createPact(
         bool isEditable_,
         string calldata pactText_,
-        uint256 secondsToMaturity_,
+        uint256 maturityTimestamp_,
         bool votingEnabled_,
         bool[] calldata participantCanWithdrawArray_,
         Participant[] calldata participants_
@@ -81,9 +81,10 @@ contract WordPact {
         pacts[uid].pactText = pactText_;
         pacts[uid].votingEnabled = votingEnabled_;
         pacts[uid].totalValue = msg.value;
-        if (secondsToMaturity_ > 0) {
-            pacts[uid].maturityTimeStamp = uint64(
-                secondsToMaturity_ + block.timestamp
+        if (maturityTimestamp_ > 0) {
+            if(maturityTimestamp_ < block.timestamp + 900 days) //Don't allow too big maturity times
+                pacts[uid].maturityTimestamp  = uint64(
+                maturityTimestamp_
             );
         }
         pacts[uid].creator = msg.sender;
@@ -128,7 +129,7 @@ contract WordPact {
 
     function withdraw(bytes32 pactid, uint256 amount) external {
         require(
-            block.timestamp > pacts[pactid].maturityTimeStamp,
+            block.timestamp > pacts[pactid].maturityTimestamp,
             "Time locked"
         );
         require(canWithdraw[pactid][msg.sender], "Unauthorized");
@@ -153,7 +154,7 @@ contract WordPact {
         require(pacts[pactid].creator == msg.sender, "Unauthorized");
         require(pacts[pactid].participants.length > 0, "No Voters");
         require(endTimeSeconds < 180 days, "Voting period too long");
-        pacts[pactid].votingEndTimeStamp = uint64(
+        pacts[pactid].votingEndTimestamp = uint64(
             block.timestamp + endTimeSeconds
         );
         votingActive[pactid] = true;
@@ -170,7 +171,7 @@ contract WordPact {
             && contributions[pactid][msg.sender] >= minVotingContribution[pactid],
             "Not allowed"
         );
-        require(block.timestamp < pacts[pactid].votingEndTimeStamp , "Voting Ended");
+        require(block.timestamp < pacts[pactid].votingEndTimestamp , "Voting Ended");
         canVote[pactid][msg.sender] = false;
         hasVoted[pactid][msg.sender] = true;
 
