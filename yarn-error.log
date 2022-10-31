@@ -1,0 +1,52 @@
+Arguments: 
+  /opt/homebrew/Cellar/node/18.10.0/bin/node /opt/homebrew/bin/yarn add @openzeppelin/hardhat-upgrade
+
+PATH: 
+  /opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/opt/homebrew/sbin
+
+Yarn version: 
+  1.22.19
+
+Node version: 
+  18.10.0
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/@openzeppelin%2fhardhat-upgrade: Not found
+      at params.callback [as _callback] (/opt/homebrew/lib/node_modules/yarn/lib/cli.js:66145:18)
+      at self.callback (/opt/homebrew/lib/node_modules/yarn/lib/cli.js:140890:22)
+      at Request.emit (node:events:513:28)
+      at Request.<anonymous> (/opt/homebrew/lib/node_modules/yarn/lib/cli.js:141862:10)
+      at Request.emit (node:events:513:28)
+      at IncomingMessage.<anonymous> (/opt/homebrew/lib/node_modules/yarn/lib/cli.js:141784:12)
+      at Object.onceWrapper (node:events:627:28)
+      at IncomingMessage.emit (node:events:525:35)
+      at endReadableNT (node:internal/streams/readable:1359:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:82:21)
+
+npm manifest: 
+  {
+    "name": "hardhat-project",
+    "devDependencies": {
+      "@nomicfoundation/hardhat-chai-matchers": "^1.0.3",
+      "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+      "chai": "^4.3.6",
+      "ethers": "^5.7.0",
+      "hardhat": "^2.11.2"
+    },
+    "dependencies": {
+      "@openzeppelin/contracts": "^4.7.3",
+      "hardhat-abi-exporter": "^2.10.0"
+    },
+    "scripts": {
+      "analyze": "slither contracts --solc-args \"--base-path . --include-path node_modules/ \" --exclude-dependencies --sarif Security/results.sarif"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
