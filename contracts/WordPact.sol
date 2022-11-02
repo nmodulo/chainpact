@@ -161,10 +161,6 @@ contract WordPact {
     }
 
     function voteOnPact(bytes32 pactid, bool vote) external {
-        // console.log("Voting active canVote contribution");
-        // console.log(votingActive[pactid]);
-        // console.log(canVote[pactid][msg.sender]);
-        // console.log(contributions[pactid][msg.sender]);
         require(
             votingActive[pactid] 
             && canVote[pactid][msg.sender] 
@@ -191,7 +187,6 @@ contract WordPact {
         uint yesVotes = pacts[pactid].yesVotes;
         uint noVotes = pacts[pactid].noVotes;
 
-        // Participant[] memory participants_ = pacts[pactid].participants;
         uint numParticipants = pacts[pactid].participants.length;
         address[] memory yesBeneficiaries = new address[](numParticipants);
         address[] memory noBeneficiaries = new address[](numParticipants);
@@ -233,6 +228,7 @@ contract WordPact {
             }
         }
         uint totalValueAfter = pacts[pactid].totalValue;
+        
         //Send the remaining amount to the creator
         if (totalValueAfter > 0) {
             pacts[pactid].totalValue = 0;

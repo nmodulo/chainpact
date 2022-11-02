@@ -49,7 +49,7 @@ async function createNewPact(
     return { resultingEvent, tx }
 }
 
-const [testCreatePact, testWithBalance, testWithParticipants, testVoting] = [true, true, true, true]
+const [testCreatePact, testWithBalance, testWithParticipants, testVoting] = [false, false, false, false]
 
 describe("WordPact", function () {
 

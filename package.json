@@ -5,7 +5,8 @@
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "chai": "^4.3.6",
     "ethers": "^5.7.2",
-    "hardhat": "^2.11.2"
+    "hardhat": "^2.11.2",
+    "hardhat-contract-sizer": "^2.6.1"
   },
   "dependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.1",
