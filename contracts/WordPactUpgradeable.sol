@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import "hardhat/console.sol";
+// import "hardhat/console.sol";
 // import "./Structs.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -43,16 +43,25 @@ contract WordPactUpgradeable is
     //Overrides for Upgradeable
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    function initialize(uint _maxMaturityTime, uint _maxVotingPeriod) public {
+    function initialize(uint _maxMaturityTime, uint _maxVotingPeriod, uint _donationMaxAmount, address donationAccount_) public {
         maxMaturityTime = _maxMaturityTime;
         maxVotingPeriod = _maxVotingPeriod;
+        donationMaxAmount = _donationMaxAmount;
+        donationAccount = payable(donationAccount_);
     }
 
+    event logContribution(bytes32 uid, address payer, uint256 amount);
+    event logPactCreated(address creator, bytes32 uid);
+    event logVotingStarted(bytes32 uid);
+    event logVotingEnded(bytes32 uid);
+    event logMembershipListCreated(address creator, string listName);
     //Data
     uint64 public pactsCounter; //Stores the number of pacts in this (storage) contract
     uint64 public listsCounter; //Store the number of membership lists in this (storage contract)
+    address payable public donationAccount;
     uint public maxMaturityTime; //Maximum allowed time for maturity - for safety
     uint public maxVotingPeriod; //Maximum allowed voting window - for safety
+    uint public donationMaxAmount;
     mapping(bytes32 => PactData) public pacts; //Storing data of all the pacts
 
     mapping(bytes32 => mapping(address => uint256)) public contributions; //Mapping of contribution to a given pact, by a given address (account)
@@ -61,18 +70,13 @@ contract WordPactUpgradeable is
     mapping(bytes32 => mapping(address => bool)) public hasVoted; //Whether a given address has already voted on the given pact
     mapping(bytes32 => uint) public minVotingContribution; //Min amount of contribution each voter must have to be able to vote
     mapping(bytes32 => bool) public votingActive; //If voting is active on a given pact address
-    event logContribution(bytes32 uid, address payer, uint256 amount);
-    event logPactCreated(address creator, bytes32 uid);
-    event logVotingStarted(bytes32 uid);
-    event logVotingEnded(bytes32 uid);
 
     //membership list
-    mapping(bytes32 => address[]) public membershipLists;
-    mapping(bytes32 => mapping(address => bool)) public listAdmin;
-    event logMembershipListCreated(address creator, bytes32 listName);
+    mapping(string => address[]) public membershipLists;
+    mapping(string => mapping(address => bool)) public listAdmin;
 
     //modifiers
-    modifier isListAdmin(bytes32 listName) {
+    modifier isListAdmin(string memory listName) {
         require(listAdmin[listName][msg.sender], "Unauthorized");
         _;
     }
@@ -96,37 +100,43 @@ contract WordPactUpgradeable is
     }
 
     function createMembershipList(
-        bytes32 listName_,
+        string calldata listName_,
         address[] calldata members_
     ) external payable {
         require(membershipLists[listName_].length == 0 && members_.length > 0);
-        if (uint(listName_) < 0xffffffffffffffffffffffff) {
-            require(msg.value == uint(listName_) / 0xffffffffffffffffffffffff);
+        // console.log("cml ", listName_, bytes(listName_).length);
+        if(bytes(listName_).length < 12){
+            // uint requiredAmount = donationMaxAmount / 10**(bytes(listName_).length);
+            require(msg.value >= (donationMaxAmount / 10**(bytes(listName_).length)), "Insufficient amount");
+            donationAccount.transfer(msg.value);
         }
+
         listAdmin[listName_][msg.sender] = true;
-        for (uint i = 0; i < members_.length; i++) {
-            if (members_[i] != address(0)) {
-                membershipLists[listName_].push(members_[i]);
-            }
-        }
+        addMembersToList(listName_, members_);
+        // for (uint i = 0; i < members_.length; i++) {
+        //     if (members_[i] != address(0)) {
+        //         membershipLists[listName_].push(members_[i]);
+        //     }
+        // }
         emit logMembershipListCreated(msg.sender, listName_);
     }
 
-    function addAdminForList(bytes32 listName_, address newAdmin_)
+    function addAdminForList(string calldata listName_, address newAdmin_)
         external
         isListAdmin(listName_)
     {
+        // console.log("aafl ", listName_, bytes(listName_).length);
         listAdmin[listName_][newAdmin_] = true;
     }
 
     /**Function to remove self or a member for a given list */
     function removeFromList(
-        bytes32 listName_,
+        string calldata listName_,
         uint indexToRemove,
         address memberToRemove_
     ) external {
         require(
-            listAdmin[listName_][memberToRemove_] ||
+            listAdmin[listName_][msg.sender] ||
                 memberToRemove_ == msg.sender,
             "Unauthorized"
         );
@@ -144,8 +154,8 @@ contract WordPactUpgradeable is
         membershipLists[listName_].pop();
     }
 
-    function addMembersToList(bytes32 listName_, address[] calldata members_)
-        external
+    function addMembersToList(string calldata listName_, address[] calldata members_)
+        public
         isListAdmin(listName_)
     {
         for (uint i = 0; i < members_.length; i++) {
@@ -160,7 +170,7 @@ contract WordPactUpgradeable is
         string calldata pactText_,
         uint256 timeLockEndTimestamp_,
         Participant[] calldata participants_,
-        bytes32 memberList_,
+        string calldata memberList_,
         bool enableWithdrawingContribution
     ) external payable returns (bytes32 uid) {
         if (timeLockEndTimestamp_ != 0) {
@@ -183,12 +193,13 @@ contract WordPactUpgradeable is
         canWithdrawContribution[uid] = enableWithdrawingContribution;
 
         if (participants_.length > 0) addParticipants(uid, participants_);
-        if (memberList_ != "") addParticipantsFromList(uid, memberList_);
+        if (bytes(memberList_).length > 0) {
+            addParticipantsFromList(uid, memberList_);
+        }
         pactsCounter++;
         emit logPactCreated(msg.sender, uid);
         if (msg.value > 0) {
-            contributions[uid][msg.sender] += msg.value;
-            emit logContribution(uid, msg.sender, msg.value);
+            pitchIn(uid);
         }
         return uid;
     }
@@ -218,18 +229,18 @@ contract WordPactUpgradeable is
     }
 
     /** Sets canVote to true for all participants from the given list for the given Pact ID  */
-    function addParticipantsFromList(bytes32 pactid, bytes32 list)
+    function addParticipantsFromList(bytes32 pactid, string calldata listName)
         public
         onlyPactCreator(pactid)
     {
-        for (uint j = 0; j < membershipLists[list].length; j++) {
-            canVote[pactid][membershipLists[list][j]] = true;
+        for (uint j = 0; j < membershipLists[listName].length; j++) {
+            canVote[pactid][membershipLists[listName][j]] = true;
         }
     }
 
     // /** Function to allow external addresses or participants to add funds */
-    function pitchIn(bytes32 pactid) external payable {
-        require(pacts[pactid].created);
+    function pitchIn(bytes32 pactid) public payable {
+        require(pacts[pactid].created && msg.value > 0);
         emit logContribution(pactid, msg.sender, msg.value);
         pacts[pactid].totalValue += msg.value;
         contributions[pactid][msg.sender] += msg.value;
@@ -353,10 +364,7 @@ contract WordPactUpgradeable is
             for (uint i = 0; i < divisions; i++) {
                 pacts[pactid].totalValue -= amountToSend;
                 payable(finalBeneficiaries[i]).transfer(amountToSend);
-                console.log(amountToSend);
-                console.log("Sent to ");
-                console.log(finalBeneficiaries[i])
-;            }
+            }
             totalValueAfter = pacts[pactid].totalValue;
             pacts[pactid].totalValue = 0;
 
@@ -382,6 +390,10 @@ contract WordPactUpgradeable is
         returns (Participant[] memory)
     {
         return pacts[pactid].participants;
+    }
+
+    function getListMembers(string calldata listName) external view returns(address[] memory){
+        return membershipLists[listName];
     }
 
     function setText(bytes32 pactid, string memory pactText_)

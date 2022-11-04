@@ -42,7 +42,7 @@ async function createNewPact(
             beneficiaryType: beneficiaryTypes[i]
         })
     }
-    let tx = await (await pact.createPact(isEditable_, pactText_, timeLockEndTimestamp_, participants, ethers.utils.formatBytes32String(memberListName), canWithdrawContribution, { value })).wait()
+    let tx = await (await pact.createPact(isEditable_, pactText_, timeLockEndTimestamp_, participants, memberListName, canWithdrawContribution, { value })).wait()
 
     let resultingEvent = tx.events && tx.events[0].decode && tx.events[0].decode(tx.events[0].data)
 
@@ -50,7 +50,7 @@ async function createNewPact(
     return { resultingEvent, tx }
 }
 
-const [testCreatePact, testWithBalance, testWithParticipants, testVoting] = [false, false, false, true]
+const [testCreatePact, testWithBalance, testWithParticipants, testVoting, testCreateMemberList] = [true, true, true, true, true]
 
 describe("WordPactUpgradeable", function () {
 
@@ -59,7 +59,7 @@ describe("WordPactUpgradeable", function () {
         let pactFactory: WordPactUpgradeable__factory = await ethers.getContractFactory("WordPactUpgradeable")
         pact = await pactFactory.deploy()
         await pact.deployed()
-        pact.initialize(86400*5, 86400*2)
+        await pact.initialize(86400*5, 86400*2, ethers.utils.parseEther("1000"), "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
     })
 
     if (testCreatePact)
@@ -286,6 +286,92 @@ describe("WordPactUpgradeable", function () {
             await pact.addParticipants(resultingEvent.uid, [party1])
             await pact.startVotingWindow(resultingEvent.uid, 2,false)
             await expect (pact.addParticipants(resultingEvent.uid, [party2])).to.be.reverted
+        })
+    })
+
+    if(testCreateMemberList) describe("Test with Member lists", function() {
+
+        it("should allow creating member lists", async function(){
+            const listName = "abcdefghijklm"
+            await pact.createMembershipList(listName, [participant1.address, participant2.address, participant3.address, participant4.address, participant5.address])
+            let createdList = await pact.getListMembers(listName)
+            expect(createdList.length).to.eq(5)
+            expect(createdList.includes(participant1.address))
+            expect(createdList.includes(participant2.address))
+            expect(createdList.includes(participant3.address))
+            expect(createdList.includes(participant4.address))
+        })
+
+        it("should not allow creating short list names without donation", async function(){
+            const listName = "abcdefghij"
+            //Insufficient amount sent
+            await expect(pact.createMembershipList("a", [participant1.address])).to.be.reverted
+            await expect(pact.createMembershipList("ab", [participant1.address])).to.be.reverted
+            await expect(pact.createMembershipList("abcdef", [participant1.address])).to.be.reverted
+            
+            //Length greater than 11 characters, okay
+            await expect(await pact.createMembershipList("abcdefghijklmnopqrstuvwxyz", [participant1.address])).to.not.be.reverted
+            
+            //Supply correct value to the messsage
+            await expect(await pact.createMembershipList(listName, [participant1.address], {value: (await pact.donationMaxAmount()).div(listName.length)})).to.not.be.reverted
+            
+            //More value than required
+            await expect(pact.createMembershipList(listName, [participant1.address], {value: (await pact.donationMaxAmount()).div(listName.length).add(1)})).to.be.reverted
+        })
+
+        it("should allow adding admins to member list, and admin actions thereof", async function(){
+            const listName = "MyAdminListName"
+            await pact.createMembershipList(listName, [participant1.address])
+            await expect(await pact.addAdminForList(listName, participant2.address)).to.not.be.reverted;
+            await expect(await pact.connect(participant2).addMembersToList(listName, [participant3.address])).to.not.be.reverted
+
+            let membersNow = await pact.getListMembers(listName)
+            expect(membersNow.includes(participant1.address))
+            expect(membersNow.includes(participant3.address))
+            expect(membersNow.length).to.eq(2)
+        })
+
+        it("should allow removing members, including self", async function(){
+            const listName = "ForAllowRemovingMembers"
+            await pact.createMembershipList(listName, [participant1.address, participant2.address])
+            let membersNow = await pact.getListMembers(listName)
+            expect(membersNow.includes(participant1.address))
+
+            await pact.removeFromList(listName, 0, participant1.address)
+            membersNow = await pact.getListMembers(listName)
+            expect(membersNow.length).to.eq(1)
+
+            await pact.connect(participant2).removeFromList(listName, 0, participant2.address)
+            membersNow = await pact.getListMembers(listName)
+            expect(membersNow.length).to.eq(0)
+        })
+
+        it("should allow creating a pact with a member list", async function(){
+            const listName = "ForCreatingPactFromList"
+            await pact.createMembershipList(listName, [participant1.address, participant2.address])
+            let value = BigNumber.from(1000)
+            let { resultingEvent } = await createNewPact(value, false, "test", 0, [], [], [], listName, false)
+            // let createdPact = await pact.pacts(resultingEvent.uid)
+            expect(await pact.canVote(resultingEvent.uid, participant1.address)).to.be.true
+        })
+
+        it("should allow adding a list to a created pact", async function(){
+            const listName = "ForAllowingAddingFromList"
+            await pact.createMembershipList(listName, [participant1.address, participant2.address])
+            let value = BigNumber.from(1000)
+            let { resultingEvent } = await createNewPact(value, false, "test", 0, [], [], [], "", false)
+            // let createdPact = await pact.pacts(resultingEvent.uid)
+            expect(await pact.canVote(resultingEvent.uid, participant1.address)).to.be.false
+            await expect(await pact.addParticipantsFromList(resultingEvent.uid, listName)).to.not.be.reverted
+            expect(await pact.canVote(resultingEvent.uid, participant1.address)).to.be.true
+            expect(await pact.canVote(resultingEvent.uid, participant2.address)).to.be.true
+        })
+    })
+
+    if(false)
+    describe('random', function(){
+        it("test", async function(){
+        
         })
     })
 });
