@@ -40,21 +40,12 @@ contract WordPactUpgradeable is
     UUPSUpgradeable,
     OwnableUpgradeable
 {
-    //Overrides for Upgradeable
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    function initialize(uint _maxMaturityTime, uint _maxVotingPeriod, uint _donationMaxAmount, address donationAccount_) public {
-        maxMaturityTime = _maxMaturityTime;
-        maxVotingPeriod = _maxVotingPeriod;
-        donationMaxAmount = _donationMaxAmount;
-        donationAccount = payable(donationAccount_);
-    }
-
-    event logContribution(bytes32 uid, address payer, uint256 amount);
-    event logPactCreated(address creator, bytes32 uid);
+    event logContribution(bytes32 indexed uid, address payer, uint256 amount);
+    event logPactCreated(address indexed creator, bytes32 uid);
     event logVotingStarted(bytes32 uid);
     event logVotingEnded(bytes32 uid);
-    event logMembershipListCreated(address creator, string listName);
+    event logMembershipListCreated(address indexed creator, string listName);
     //Data
     uint64 public pactsCounter; //Stores the number of pacts in this (storage) contract
     uint64 public listsCounter; //Store the number of membership lists in this (storage contract)
@@ -84,6 +75,18 @@ contract WordPactUpgradeable is
     modifier onlyPactCreator(bytes32 pactid) {
         require(pacts[pactid].creator == msg.sender);
         _;
+    }
+
+   ///@dev required by the OZ UUPS module
+    function _authorizeUpgrade(address) internal override onlyOwner {}
+
+    function initialize(uint _maxMaturityTime, uint _maxVotingPeriod, uint _donationMaxAmount, address donationAccount_) public initializer{
+        maxMaturityTime = _maxMaturityTime;
+        maxVotingPeriod = _maxVotingPeriod;
+        donationMaxAmount = _donationMaxAmount;
+        donationAccount = payable(donationAccount_);
+        ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
+       __Ownable_init();
     }
 
     //Generic
@@ -183,7 +186,6 @@ contract WordPactUpgradeable is
         pacts[uid].created = true;
         pacts[uid].isEditable = isEditable_;
         pacts[uid].pactText = pactText_;
-        pacts[uid].totalValue = msg.value;
         if (timeLockEndTimestamp_ > 0) {
             pacts[uid].timeLockEndTimestamp = uint64(timeLockEndTimestamp_);
         }

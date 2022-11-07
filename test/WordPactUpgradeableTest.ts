@@ -58,7 +58,7 @@ describe("WordPactUpgradeable", function () {
         await setSigners()
         let pactFactory: WordPactUpgradeable__factory = await ethers.getContractFactory("WordPactUpgradeable")
         pact = await pactFactory.deploy()
-        await pact.deployed()
+        pact = await pact.deployed()
         await pact.initialize(86400*5, 86400*2, ethers.utils.parseEther("1000"), "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
     })
 
@@ -66,10 +66,9 @@ describe("WordPactUpgradeable", function () {
         describe("Create And edit text", function () {
             it("Should allow creating a pact with various inputs", async function () {
                 let { resultingEvent } = await createNewPact()
-                expect(resultingEvent.creator).to.eq(creator.address)
                 expect(resultingEvent.uid).to.have.length(66)
-                // let pactCreated = await pact.getPact(resultingEvent.uid)
-                // console.log(pactCreated)
+                let pactCreated = await pact.pacts(resultingEvent.uid)
+                expect(pactCreated.creator).to.eq(creator.address)
             })
             it("should allow editing an editable pact", async function () {
                 let { resultingEvent } = await createNewPact(BigNumber.from(0), true)
@@ -89,12 +88,17 @@ describe("WordPactUpgradeable", function () {
     if (testWithBalance) describe("With Balance", function () {
         it("should allow adding value to the pact while deploying", async function () {
             let value = BigNumber.from(1000)
+
             let balanceBefore = await ethers.provider.getBalance(pact.address)
+
             let { resultingEvent } = await createNewPact(value)
+
             let balanceAfter = await ethers.provider.getBalance(pact.address)
-            let contributionAfter = await pact.contributions(resultingEvent.uid, creator.address)
             expect(balanceAfter).to.eq(balanceBefore.add(value))
+
+            let contributionAfter = await pact.contributions(resultingEvent.uid, creator.address)
             expect(contributionAfter).to.eq(value)
+
             expect((await pact.pacts(resultingEvent.uid)).totalValue).to.eq(value)
         })
 

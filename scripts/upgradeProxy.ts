@@ -1,12 +1,16 @@
-import { ethers, upgrades } from "hardhat";
+import { ethers, network, upgrades } from "hardhat";
 
-const PROXY = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+let deploymentDetails: any = {
+    "fuji": { "address": "0xa9Fbe5372669b6297A367D7f799063c10c141b0B" }, 
+    "local": { "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"}
+}
 
 async function main() {
- const WordPactV2 = await ethers.getContractFactory("WordPactV2");
- console.log("Upgrading WordPact...");
- await upgrades.upgradeProxy(PROXY, WordPactV2);
- console.log("WordPact upgraded successfully");
+    const WordPactV2 = await ethers.getContractFactory("WordPactUpgradeable");
+    console.log("Upgrading WordPact...");
+    let address = deploymentDetails[network.name]
+    await upgrades.upgradeProxy(address, WordPactV2);
+    console.log("WordPact upgraded successfully");
 }
 
 main();
