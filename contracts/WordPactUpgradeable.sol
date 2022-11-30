@@ -1,37 +1,69 @@
 //SPDX-License-Identifier: MIT
-pragma solidity >=0.8.0 <0.9.0;
+pragma solidity 0.8.16;
 
-// import "hardhat/console.sol";
-// import "./Structs.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-enum BeneficiaryType {
+///@dev Three types of vote options
+enum VoteType {
     NONE,
     YES,
     NO
 }
 
-struct Participant {
-    address addr;
-    bool canVote;
-    BeneficiaryType beneficiaryType;
+///@dev Three types of options related to when to start voting
+enum VoteTimeOption {
+    IMMEDIATE,
+    GIVEN_TIME,
+    MANUAL
 }
 
+///@dev Struct for storing overall contract configuration to be initialized
+struct Config {
+    uint32 maxMaturityTime; //Maximum allowed time for maturity - for safety
+    uint32 maxVotingPeriod; //Maximum allowed voting window - for safety
+    uint32 minOpenParticipationVotingPeriod;
+    address groupsContract;
+    uint128 minOpenParticipationAmount; //Minimum contribution amount the open participation should be set to
+}
+
+///@dev Struct for storing options related to voting for pacts
+struct VotingInfo {
+    bool votingEnabled;
+    bool openParticipation;
+    bool refundOnVotedYes;
+    bool refundOnVotedNo;
+    VoteTimeOption voteTimeOption;
+    uint40 duration;
+    uint40 votingStartTimestamp; //Timestamp at which voting window ends
+    uint128 minContribution;
+}
+
+///@dev Struct for storing all pact related data
 struct PactData {
-    bool created; //Whether a pact for the pactId was created
-    bool isEditable; //whether the pactText should be editable
-    bool refundOnVotedNo; //On failed motion (Vote result No), should all contributions be refunded
     uint32 yesVotes; //Count of votes for the motion
     uint32 noVotes; //Count of votes against the motion
     uint64 timeLockEndTimestamp; //Timestamp in seconds after which the locked amount should be allowed to be withdrawn
-    uint64 votingEndTimestamp; //Timestamp at which voting window ends
+    uint128 totalValue; //Total value held in this pact
+    bool created; //Whether a pact for the pactId was created
+    bool votingActive;
+    bool votingEnded;
+    bool refundAvailable;
+    bool isEditable; //whether the pactText should be editable
     address creator; //Address of the author of original post
-    uint256 totalValue; //Total value held in this pact
     string pactText; //Textual summary of proposal
-    Participant[] participants;
     bytes32 memberList;
+    address[] voters;
+    address[] yesBeneficiaries;
+    address[] noBeneficiaries;
+}
+
+struct PactUserInteraction {
+    bool canVote;
+    bool hasVoted;
+    VoteType castedVote;
+    uint128 contribution;
 }
 
 // UUPSUpgradeable
@@ -40,164 +72,111 @@ contract WordPactUpgradeable is
     UUPSUpgradeable,
     OwnableUpgradeable
 {
-
     event logContribution(bytes32 indexed uid, address payer, uint256 amount);
     event logPactCreated(address indexed creator, bytes32 uid);
     event logVotingStarted(bytes32 uid);
     event logVotingEnded(bytes32 uid);
     event logMembershipListCreated(address indexed creator, string listName);
+    event logAmountOut(
+        bytes32 indexed uid,
+        address indexed payee,
+        uint256 amount
+    );
     //Data
-    uint64 public pactsCounter; //Stores the number of pacts in this (storage) contract
-    uint64 public listsCounter; //Store the number of membership lists in this (storage contract)
-    address payable public donationAccount;
-    uint public maxMaturityTime; //Maximum allowed time for maturity - for safety
-    uint public maxVotingPeriod; //Maximum allowed voting window - for safety
-    uint public donationMaxAmount;
+    uint public pactsCounter; //Stores the number of pacts in this (storage) contract
+    Config public config;
     mapping(bytes32 => PactData) public pacts; //Storing data of all the pacts
+    mapping(bytes32 => VotingInfo) public votingInfo;
+    mapping(bytes32 => mapping(address => PactUserInteraction))
+        public userInteractionData;
 
-    mapping(bytes32 => mapping(address => uint256)) public contributions; //Mapping of contribution to a given pact, by a given address (account)
-    mapping(bytes32 => bool) public canWithdrawContribution; //Flag to for contributors to withdraw contribution on failed motion [Voted NO]
-    mapping(bytes32 => mapping(address => bool)) public canVote; //Whether a given address is allowed to vote on the given pact
-    mapping(bytes32 => mapping(address => bool)) public hasVoted; //Whether a given address has already voted on the given pact
-    mapping(bytes32 => uint) public minVotingContribution; //Min amount of contribution each voter must have to be able to vote
     mapping(bytes32 => bool) public votingActive; //If voting is active on a given pact address
+    mapping(address => uint) public grants;
 
-    //membership list
-    mapping(string => address[]) public membershipLists;
-    mapping(string => mapping(address => bool)) public listAdmin;
-
-    //modifiers
-    modifier isListAdmin(string memory listName) {
-        require(listAdmin[listName][msg.sender], "Unauthorized");
-        _;
-    }
+    ///@dev required by the OZ UUPS module
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     modifier onlyPactCreator(bytes32 pactid) {
         require(pacts[pactid].creator == msg.sender);
         _;
     }
 
-   ///@dev required by the OZ UUPS module
-    function _authorizeUpgrade(address) internal override onlyOwner {}
-
-    function initialize(uint _maxMaturityTime, uint _maxVotingPeriod, uint _donationMaxAmount, address donationAccount_) public initializer{
-        maxMaturityTime = _maxMaturityTime;
-        maxVotingPeriod = _maxVotingPeriod;
-        donationMaxAmount = _donationMaxAmount;
-        donationAccount = payable(donationAccount_);
+    function initialize(Config calldata _config) public initializer {
+        config = _config;
         ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
-       __Ownable_init();
-    }
-
-    //Generic
-    receive() external payable {
-        emit logContribution(0, msg.sender, msg.value);
+        __Ownable_init();
     }
 
     //Logic
     function calcUid() public view returns (bytes32 uid) {
         return
             keccak256(
-                abi.encodePacked(msg.sender, block.timestamp, pactsCounter)
+                abi.encodePacked(
+                    address(this),
+                    msg.sender,
+                    "chainpact_proposalpact",
+                    pactsCounter
+                )
             );
-    }
-
-    function createMembershipList(
-        string calldata listName_,
-        address[] calldata members_
-    ) external payable {
-        require(membershipLists[listName_].length == 0 && members_.length > 0);
-        // console.log("cml ", listName_, bytes(listName_).length);
-        if(bytes(listName_).length < 12){
-            // uint requiredAmount = donationMaxAmount / 10**(bytes(listName_).length);
-            require(msg.value >= (donationMaxAmount / 10**(bytes(listName_).length)), "Insufficient amount");
-            donationAccount.transfer(msg.value);
-        }
-
-        listAdmin[listName_][msg.sender] = true;
-        addMembersToList(listName_, members_);
-        // for (uint i = 0; i < members_.length; i++) {
-        //     if (members_[i] != address(0)) {
-        //         membershipLists[listName_].push(members_[i]);
-        //     }
-        // }
-        emit logMembershipListCreated(msg.sender, listName_);
-    }
-
-    function addAdminForList(string calldata listName_, address newAdmin_)
-        external
-        isListAdmin(listName_)
-    {
-        // console.log("aafl ", listName_, bytes(listName_).length);
-        listAdmin[listName_][newAdmin_] = true;
-    }
-
-    /**Function to remove self or a member for a given list */
-    function removeFromList(
-        string calldata listName_,
-        uint indexToRemove,
-        address memberToRemove_
-    ) external {
-        require(
-            listAdmin[listName_][msg.sender] ||
-                memberToRemove_ == msg.sender,
-            "Unauthorized"
-        );
-        uint listLength = membershipLists[listName_].length;
-        require(
-            indexToRemove < listLength &&
-                membershipLists[listName_][indexToRemove] == memberToRemove_
-        );
-        if (indexToRemove < listLength - 1 && listLength > 1) {
-            //not the last element
-            membershipLists[listName_][indexToRemove] = membershipLists[
-                listName_
-            ][listLength - 1];
-        }
-        membershipLists[listName_].pop();
-    }
-
-    function addMembersToList(string calldata listName_, address[] calldata members_)
-        public
-        isListAdmin(listName_)
-    {
-        for (uint i = 0; i < members_.length; i++) {
-            if (members_[i] != address(0)) {
-                membershipLists[listName_].push(members_[i]);
-            }
-        }
     }
 
     function createPact(
-        bool isEditable_,
-        string calldata pactText_,
-        uint256 timeLockEndTimestamp_,
-        Participant[] calldata participants_,
-        string calldata memberList_,
-        bool enableWithdrawingContribution
+        uint256 _timeLockEndTimestamp,
+        VotingInfo memory votingInfo_,
+        bool _isEditable,
+        string calldata _pactText,
+        string calldata _memberList,
+        address[] calldata _voters,
+        address[] calldata _yesBeneciaries,
+        address[] calldata _noBeneficiaries
     ) external payable returns (bytes32 uid) {
-        if (timeLockEndTimestamp_ != 0) {
+        Config memory config_ = config;
+        PactData memory pactData_;
+
+        if (_timeLockEndTimestamp != 0) {
             require(
-                timeLockEndTimestamp_ < block.timestamp + maxMaturityTime,
-                "Maturity Time too long"
+                _timeLockEndTimestamp <
+                    block.timestamp + config_.maxMaturityTime,
+                "locktime too long"
             );
+            pactData_.timeLockEndTimestamp = uint64(_timeLockEndTimestamp);
         }
+
+        ///@dev voting related checks
+        if (votingInfo_.votingEnabled) {
+            require(votingInfo_.refundOnVotedYes || _yesBeneciaries.length > 0);
+            require(votingInfo_.refundOnVotedNo || _noBeneficiaries.length > 0);
+            if (votingInfo_.openParticipation) {
+                require(
+                    votingInfo_.minContribution >=
+                        config_.minOpenParticipationAmount
+                );
+            }
+            require(votingInfo_.duration <= config_.maxVotingPeriod);
+
+            if (votingInfo_.voteTimeOption == VoteTimeOption.MANUAL) {
+                require(!votingInfo_.openParticipation);
+            } else if (
+                votingInfo_.voteTimeOption == VoteTimeOption.GIVEN_TIME
+            ) {
+                require(votingInfo_.votingStartTimestamp > block.timestamp);
+            } else {
+                votingInfo_.votingStartTimestamp = uint40(block.timestamp);
+            }
+        }
+
         uid = calcUid(); //Calculate a unique identifier as the pact identifier
-        pacts[uid].created = true;
-        pacts[uid].isEditable = isEditable_;
-        pacts[uid].pactText = pactText_;
-        if (timeLockEndTimestamp_ > 0) {
-            pacts[uid].timeLockEndTimestamp = uint64(timeLockEndTimestamp_);
-        }
-        pacts[uid].creator = msg.sender;
+        pactData_.created = true;
+        pactData_.isEditable = _isEditable;
+        pactData_.pactText = _pactText;
+        pactData_.creator = msg.sender;
 
-        //Option to enable or disable withdrawal of contribution
-        canWithdrawContribution[uid] = enableWithdrawingContribution;
+        votingInfo[uid] = votingInfo_;
 
-        if (participants_.length > 0) addParticipants(uid, participants_);
-        if (bytes(memberList_).length > 0) {
-            addParticipantsFromList(uid, memberList_);
-        }
+        if (_voters.length != 0) addVoters(uid, _voters);
+        // if (bytes(_memberList).length > 0) {
+        //     addParticipantsFromList(uid, memberList_);
+        // }
         pactsCounter++;
         emit logPactCreated(msg.sender, uid);
         if (msg.value > 0) {
@@ -206,46 +185,39 @@ contract WordPactUpgradeable is
         return uid;
     }
 
-    // /** Function to enable withdrawing own contribution after the pact is deployed */
-    function enableWithdrawContribution(bytes32 pactid)
-        external
-        onlyPactCreator(pactid)
-    {
-        if (!canWithdrawContribution[pactid]) {
-            canWithdrawContribution[pactid] = true;
-        }
-    }
-
     // /** Function to add participants to a pact after its creation
     //     - Can be performed by OP
     //     - Can't be performed when voting window is active */
-    function addParticipants(
+    function addVoters(
         bytes32 pactid,
-        Participant[] calldata participants_
+        address[] calldata _voters
     ) public onlyPactCreator(pactid) {
-        require(!votingActive[pactid]);
-        for (uint256 i = 0; i < participants_.length; i++) {
-            pacts[pactid].participants.push(participants_[i]);
-            canVote[pactid][participants_[i].addr] = participants_[i].canVote;
+        require(!pacts[pactid].votingActive);
+        require(!votingInfo[pactid].)
+        for (uint i = 0; i < _voters.length; i++) {
+            pacts[pactid].voters.push(_voters[i]);
+            userInteractionData[pactid][_voters[i]].canVote = true;
         }
     }
 
     /** Sets canVote to true for all participants from the given list for the given Pact ID  */
-    function addParticipantsFromList(bytes32 pactid, string calldata listName)
-        public
-        onlyPactCreator(pactid)
-    {
-        for (uint j = 0; j < membershipLists[listName].length; j++) {
-            canVote[pactid][membershipLists[listName][j]] = true;
-        }
-    }
+    // function addParticipantsFromList(bytes32 pactid, string calldata listName)
+    //     public
+    //     onlyPactCreator(pactid)
+    // {
+    //     for (uint j = 0; j < membershipLists[listName].length; j++) {
+    //         canVote[pactid][membershipLists[listName][j]] = true;
+    //     }
+    // }
 
     // /** Function to allow external addresses or participants to add funds */
     function pitchIn(bytes32 pactid) public payable {
         require(pacts[pactid].created && msg.value > 0);
+        pacts[pactid].totalValue += uint128(msg.value);
+        userInteractionData[pactid][msg.sender].contribution += uint128(
+            msg.value
+        );
         emit logContribution(pactid, msg.sender, msg.value);
-        pacts[pactid].totalValue += msg.value;
-        contributions[pactid][msg.sender] += msg.value;
     }
 
     /** Function to allow users to withdraw their share of contribution from pact id */
@@ -256,13 +228,21 @@ contract WordPactUpgradeable is
                 amount <= pacts[pactid].totalValue
         );
 
-        if (canWithdrawContribution[pactid]) {
-            uint contri = contributions[pactid][msg.sender];
-            if (amount <= contri) {
-                contributions[pactid][msg.sender] = contri - amount;
-                pacts[pactid].totalValue -= amount;
-                payable(msg.sender).transfer(amount);
-            }
+        uint contri = userInteractionData[pactid][msg.sender].contribution;
+        if (amount <= contri) {
+            userInteractionData[pactid][msg.sender].contribution = uint128(
+                contri - amount
+            );
+            pacts[pactid].totalValue -= uint128(amount);
+            payable(msg.sender).transfer(amount);
+            emit logAmountOut(pactid, msg.sender, amount);
+        }
+    }
+
+    function withdrawGrant(uint amount) external {
+        if (grants[msg.sender] >= amount) {
+            grants[msg.sender] -= amount;
+            payable(msg.sender).transfer(amount);
         }
     }
 
@@ -272,136 +252,101 @@ contract WordPactUpgradeable is
         uint64 endTimeSeconds,
         bool ifRefundOnVotedNo
     ) external onlyPactCreator(pactid) {
+        Config memory config_ = config;
         require(
             !votingActive[pactid] &&
-                pacts[pactid].participants.length > 0 &&
-                endTimeSeconds < maxVotingPeriod
+                pacts[pactid].voters.length > 0 &&
+                endTimeSeconds < config_.maxVotingPeriod
         );
-        pacts[pactid].votingEndTimestamp = uint64(
-            block.timestamp + endTimeSeconds
-        );
-        pacts[pactid].refundOnVotedNo = ifRefundOnVotedNo;
-        votingActive[pactid] = true;
+        votingInfo[pactid].duration = uint32(endTimeSeconds);
+        if (ifRefundOnVotedNo) votingInfo[pactid].refundOnVotedNo = true;
+        pacts[pactid].votingActive = true;
     }
 
-    function voteOnPact(bytes32 pactid, bool vote) external {
-        require(
-            // votingActive[pactid] &&
-            canVote[pactid][msg.sender] &&
-                !hasVoted[pactid][msg.sender] &&
-                contributions[pactid][msg.sender] >=
-                minVotingContribution[pactid],
-            "Unauthorized"
-        );
-        require(block.timestamp < pacts[pactid].votingEndTimestamp);
-        hasVoted[pactid][msg.sender] = true;
+    // function voteOnPact(bytes32 _pactid, VoteType _vote) external {
+    //     PactUserInteraction memory userData_ = userInteractionData[_pactid][msg.sender];
+    //     VotingInfo memory votingInfo_ = votingInfo[_pactid];
 
-        if (vote) pacts[pactid].yesVotes += 1;
-        else pacts[pactid].noVotes += 1;
-    }
+    //     require(
+    //         // votingActive[pactid] &&
+    //         userData_.canVote &&
+    //             !userData_.hasVoted &&
+    //             userData_.contribution >=
+    //             votingInfo[_pactid].minContribution,
+    //         "Unauthorized"
+    //     );
+    //     require(block.timestamp < votingInfo_.votingEndTimestamp);
+    //     userData_.hasVoted = true;
+    //     userData_.castedVote = _vote;
 
-    function concludeVoting(bytes32 pactid) public {
-        //Anyone with voting rights can conclude results and execution
-        require(canVote[pactid][msg.sender], "Unauthorized");
-        votingActive[pactid] = false;
-        if (pacts[pactid].totalValue == 0) return;
-
-        if (pacts[pactid].refundOnVotedNo) {
-            canWithdrawContribution[pactid] = true;
-            return;
-        }
-
-        // Participant[] memory participants_ = pacts[pactid].participants;
-        uint numParticipants = pacts[pactid].participants.length;
-        address[] memory yesBeneficiaries = new address[](numParticipants);
-        address[] memory noBeneficiaries = new address[](numParticipants);
-        uint yesBeneficiariesCount = 0;
-        uint noBeneficiariesCount = 0;
-
-        for (uint i = 0; i < numParticipants; i++) {
-            Participant memory participant = pacts[pactid].participants[i];
-            BeneficiaryType benType = participant.beneficiaryType;
-
-            if (benType == BeneficiaryType.YES) {
-                yesBeneficiaries[yesBeneficiariesCount++] = participant.addr;
-            } else if (benType == BeneficiaryType.NO) {
-                noBeneficiaries[noBeneficiariesCount++] = participant.addr;
-            }
-        }
-        uint divisions = 0;
-        uint totalValueAfter = 0;
-        address[] memory finalBeneficiaries;
-        uint amountToSend = 0;
-
-        // if (pacts[pactid].yesVotes > pacts[pactid].noVotes) {
-        //     divisions = yesBeneficiariesCount;
-        //     if (divisions != 0) {
-        //         uint amountToSend = pacts[pactid].totalValue / divisions;
-        //         for (uint i = 0; i < divisions; i++) {
-        //             pacts[pactid].totalValue -= amountToSend;
-        //             payable(yesBeneficiaries[i]).transfer(amountToSend);
-        //         }
-        //     }
-        // } else {
-        //     divisions = noBeneficiariesCount;
-        //     if (divisions != 0) {
-        //         uint amountToSend = pacts[pactid].totalValue / divisions;
-        //         for (uint i = 0; i < divisions; i++) {
-        //             pacts[pactid].totalValue -= amountToSend;
-        //             payable(noBeneficiaries[i]).transfer(amountToSend);
-        //         }
-        //     }
-        // }
-
-        if (pacts[pactid].yesVotes > pacts[pactid].noVotes) {
-            divisions = yesBeneficiariesCount;
-            finalBeneficiaries = yesBeneficiaries;
-        } else {
-            divisions = noBeneficiariesCount;
-            finalBeneficiaries = noBeneficiaries;
-        }
-
-        if (divisions != 0) {
-            amountToSend = pacts[pactid].totalValue / divisions;
-            for (uint i = 0; i < divisions; i++) {
-                pacts[pactid].totalValue -= amountToSend;
-                payable(finalBeneficiaries[i]).transfer(amountToSend);
-            }
-            totalValueAfter = pacts[pactid].totalValue;
-            pacts[pactid].totalValue = 0;
-
-            //Send the remaining amount to the creator
-            if (totalValueAfter > 0) {
-                payable(pacts[pactid].creator).transfer(totalValueAfter);
-            }
-        }
-    }
-
-    // //Getters
-    // function getPact(bytes32 pactid)
-    //     external
-    //     view
-    //     returns (PactData memory pactData)
-    // {
-    //     return pacts[pactid];
+    //     if (_vote == VoteType.YES) pacts[_pactid].yesVotes += 1;
+    //     else if(_vote == VoteType.NO) pacts[_pactid].noVotes += 1;
     // }
 
-    function getParticipants(bytes32 pactid)
-        external
-        view
-        returns (Participant[] memory)
-    {
-        return pacts[pactid].participants;
-    }
+    // function concludeVoting(bytes32 pactid) public {
+    //     //Anyone with voting rights can conclude results and execution
+    //     require(userInteractionData[pactid][msg.sender].canVote, "Unauthorized");
+    //     require(block.timestamp > votingInfo[pactid].votingEndTimestamp);
+    //     pacts[pactid].votingActive = false;
+    //     pacts[pactid].votingEnded = true;
+    //     if (pacts[pactid].totalValue == 0) return;
+    //     VotingInfo memory votingInfo_ = votingInfo[pactid];
 
-    function getListMembers(string calldata listName) external view returns(address[] memory){
-        return membershipLists[listName];
-    }
+    //     address[] storage finalBeneficiaries;
 
-    function setText(bytes32 pactid, string memory pactText_)
-        public
-        onlyPactCreator(pactid)
-    {
+    //     if (pacts[pactid].yesVotes > pacts[pactid].noVotes) {
+    //         if(votingInfo_.refundOnVotedYes){
+    //             pacts[pactid].refundAvailable = true;
+    //             return;
+    //         }
+    //         finalBeneficiaries = pacts[pactid].yesBeneficiaries;
+    //     } else if(votingInfo[pactid].refundOnVotedNo) {
+    //         pacts[pactid].refundAvailable = true;
+    //         return;
+    //     } else {
+    //         if(votingInfo_.refundOnVotedNo){
+    //             pacts[pactid].refundAvailable = true;
+    //             return;
+    //         }
+    //         finalBeneficiaries = pacts[pactid].noBeneficiaries;
+    //     }
+
+    //     uint finalBeneficiariesLength = finalBeneficiaries.length;
+
+    //     if (finalBeneficiariesLength != 0) {
+    //         uint totalValue_ = pacts[pactid].totalValue;
+    //         uint amountToSend = totalValue_/finalBeneficiariesLength;
+    //         pacts[pactid].totalValue = 0;
+    //         amountToSend = pacts[pactid].totalValue / finalBeneficiariesLength;
+    //         for (uint i = 0; i < finalBeneficiariesLength; i++) {
+    //             grants[finalBeneficiaries[i]] = amountToSend;
+    //             emit logAmountOut(pactid, finalBeneficiaries[i], amountToSend);
+    //         }
+
+    //         totalValue_ = totalValue_ - finalBeneficiariesLength * amountToSend;
+    //         if(totalValue_ > 0){
+    //             grants[pacts[pactid].creator] = totalValue_;
+    //         }
+    //     }
+    // }
+
+    // function getParticipants(bytes32 _pactid, VoteType _voteType)
+    //     external
+    //     view
+    //     returns (address[]  memory addr_, VoteType[] memory voteType_){
+    //     uint votersLength_ = pacts[_pactid].voters.length;
+    //     uint yesBeneciariesLength_ = pacts[_pactid].yesBeneciaries.length;
+    //     uint noBeneficiariesLength_ = pacts[_pactid].noBeneficiaries.length;
+    //     for(uint i=0; i<votersLength_; i++){
+    //         addr_.push(pacts[_pactid].voters[i]);
+    //         voteType_.push(VoteType.NONE);
+    //     }
+    // }
+
+    function setText(
+        bytes32 pactid,
+        string memory pactText_
+    ) public onlyPactCreator(pactid) {
         require(pacts[pactid].isEditable);
         pacts[pactid].pactText = pactText_;
     }

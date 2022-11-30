@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 
 // import "hardhat/console.sol";
-pragma solidity > 0.8.4  <= 0.8.17;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./Structs.sol";
