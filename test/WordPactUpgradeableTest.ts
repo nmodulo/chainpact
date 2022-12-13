@@ -1,48 +1,63 @@
-import { expect } from "chai";
+import { assert, expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumberish, Contract } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { WordPactUpgradeable, WordPactUpgradeable__factory } from "../typechain-types";
-import { ParticipantStruct } from "../typechain-types/contracts/WordPactUpgradeable"
+import { VotingInfoStruct, ConfigStruct } from "../typechain-types/contracts/WordPactUpgradeable"
+import { parseUnits } from "ethers/lib/utils";
 const Signer = ethers.Signer
 const BigNumber = ethers.BigNumber
 const formatBytes32String = ethers.utils.formatBytes32String
 let pact: WordPactUpgradeable
 
-let [creator, participant1, participant2, participant3, participant4, participant5, arbitrator2]: SignerWithAddress[] = []
+let [creator, participant1, participant2, participant3, participant4, participant5, arbitrator2, groupDummy]: SignerWithAddress[] = []
 
 async function setSigners() {
-    [creator, participant1, participant2, participant3, participant4, participant5, arbitrator2] = await ethers.getSigners()
+    [creator, participant1, participant2, participant3, participant4, participant5, arbitrator2, groupDummy] = await ethers.getSigners()
 }
 
 type party = {
     addr: string
     canVote: boolean
     beneficiaryType: number
-
 }
 
+let defaultVoters: string[]
+let defaultFixedBeneficiaries: string[]
+const defaultPactText = "Test pact"
+const defaultVotingInfo = {
+    votingEnabled: true,
+    openParticipation: false,
+    refundOnVotedYes: false,
+    refundOnVotedNo: true,
+    votingConcluded: false,
+    duration: BigNumber.from("16"),
+    votingStartTimestamp: BigNumber.from("0"),
+    minContribution: BigNumber.from("0")
+}
+
+let config: ConfigStruct = {
+    maxVotingPeriod: BigNumber.from(10000),
+    minOpenParticipationVotingPeriod: BigNumber.from(4),
+    groupsContract: "0x0",
+    minOpenParticipationAmount: BigNumber.from(1000)
+}
+
+const [testCreatePact, testWithBalance, testVotingActive, testAfterCreation, testVotingResults] = [true, true, true, true, true]
+
 //Helper functions
+// By default creates a pact with refundOnVotedNo, 2 yesBeneficiaries and 3 voters
 async function createNewPact(
     value = BigNumber.from(0),
+    votingInfo: VotingInfoStruct = defaultVotingInfo,
+    voterAddresses: string[] = defaultVoters,
+    yesBeneficiaries: string[] = defaultFixedBeneficiaries,
+    noBeneficiaries: string[] = [],
     isEditable_ = false,
-    pactText_ = "Test pact",
-    timeLockEndTimestamp_ = 0,
-    particpantAddresses_ = [],
-    participantsCanVoteArray_ = [],
-    beneficiaryTypes = [],
+    pactText_: string = defaultPactText,
     memberListName = "",
-    canWithdrawContribution = true
 ) {
-    let participants: ParticipantStruct[] = []
-    for (let i = 0; i < particpantAddresses_.length; i++) {
-        participants.push({
-            addr: particpantAddresses_[i],
-            canVote: participantsCanVoteArray_[i],
-            beneficiaryType: beneficiaryTypes[i]
-        })
-    }
-    let tx = await (await pact.createPact(isEditable_, pactText_, timeLockEndTimestamp_, participants, memberListName, canWithdrawContribution, { value })).wait()
+    let tx = await (await pact.createPact(votingInfo, isEditable_, pactText_, voterAddresses, yesBeneficiaries, noBeneficiaries, { value })).wait()
 
     let resultingEvent = tx.events && tx.events[0].decode && tx.events[0].decode(tx.events[0].data)
 
@@ -50,38 +65,166 @@ async function createNewPact(
     return { resultingEvent, tx }
 }
 
-const [testCreatePact, testWithBalance, testWithParticipants, testVoting, testCreateMemberList] = [true, true, true, true, true]
+async function pitchInThousand(pactIds: string[]) {
+    for (let i in pactIds) {
+        await pact.connect(participant1).pitchIn(pactIds[i], { value: BigNumber.from(1000) })
+        await pact.connect(participant2).pitchIn(pactIds[i], { value: BigNumber.from(1000) })
+        await pact.connect(participant3).pitchIn(pactIds[i], { value: BigNumber.from(1000) })
+    }
+}
+
+function compareVotingInfo(votingInfo: VotingInfoStruct, votingInfoAfter: any) {
+    expect(votingInfo.votingEnabled).to.eq(votingInfoAfter.votingEnabled)
+    expect(votingInfo.openParticipation).to.eq(votingInfoAfter.openParticipation)
+    expect(votingInfo.refundOnVotedYes).to.eq(votingInfoAfter.refundOnVotedYes)
+    expect(votingInfo.refundOnVotedNo).to.eq(votingInfoAfter.refundOnVotedNo)
+    expect(votingInfo.votingConcluded).to.eq(votingInfoAfter.votingConcluded)
+    expect(votingInfo.duration).to.eq(votingInfoAfter.duration)
+    expect(votingInfo.votingStartTimestamp).to.eq(votingInfoAfter.votingStartTimestamp)
+    expect(votingInfo.minContribution).to.eq(votingInfoAfter.minContribution)
+}
+
 
 describe("WordPactUpgradeable", function () {
 
     this.beforeAll(async () => {
         await setSigners()
+        defaultVoters = [participant1.address, participant2.address, participant3.address]
+        defaultFixedBeneficiaries = [participant4.address, participant5.address]
+        config.groupsContract = groupDummy.address
+
         let pactFactory: WordPactUpgradeable__factory = await ethers.getContractFactory("WordPactUpgradeable")
         pact = await pactFactory.deploy()
         pact = await pact.deployed()
-        await pact.initialize(86400*5, 86400*2, ethers.utils.parseEther("1000"), "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
+        await pact.initialize(config)
     })
 
     if (testCreatePact)
-        describe("Create And edit text", function () {
-            it("Should allow creating a pact with various inputs", async function () {
-                let { resultingEvent } = await createNewPact()
+        describe("Create a pact", function () {
+            it("Should create a pact with with voting disabled", async function () {
+                let votingInfo: VotingInfoStruct = {
+                    votingEnabled: false,
+                    openParticipation: false,
+                    refundOnVotedYes: false,
+                    refundOnVotedNo: false,
+                    votingConcluded: false,
+                    duration: BigNumber.from(3600),
+                    votingStartTimestamp: BigNumber.from(0),
+                    minContribution: BigNumber.from(0)
+                }
+                let { resultingEvent } = await createNewPact(BigNumber.from(0), votingInfo)
                 expect(resultingEvent.uid).to.have.length(66)
-                let pactCreated = await pact.pacts(resultingEvent.uid)
-                expect(pactCreated.creator).to.eq(creator.address)
+
+                //Check all obtainaible details
+                let pactData = await pact.pacts(resultingEvent.uid)
+                let votingInfoAfter = await pact.votingInfo(resultingEvent.uid)
+                let pactParticipants = await pact.getParticipants(resultingEvent.uid)
+
+                expect(pactData.creator).to.eq(creator.address)
+                compareVotingInfo(votingInfo, votingInfoAfter)
+                expect(pactParticipants[0].length).to.eq(0)
+                expect(pactParticipants[1].length).to.eq(0)
+                expect(pactParticipants[2].length).to.eq(0)
             })
-            it("should allow editing an editable pact", async function () {
-                let { resultingEvent } = await createNewPact(BigNumber.from(0), true)
-                let newText = "New text 01"
-                await pact.setText(resultingEvent.uid || "", newText)
-                expect((await pact.pacts(resultingEvent.uid)).pactText).to.eq(newText)
-                await pact.setText(resultingEvent.uid || "", newText + "2")
-                expect((await pact.pacts(resultingEvent.uid)).pactText).to.eq(newText + "2")
+
+            it("should create a pact with fixed participants, fixed yes and no beneficiaries", async function () {
+                let votingInfo: VotingInfoStruct = {
+                    votingEnabled: true,
+                    openParticipation: false,
+                    refundOnVotedYes: false,
+                    refundOnVotedNo: false,
+                    votingConcluded: true,
+                    duration: BigNumber.from(3600),
+                    votingStartTimestamp: BigNumber.from(0),
+                    minContribution: BigNumber.from(0)
+                }
+                let { resultingEvent } = await createNewPact(BigNumber.from(0), votingInfo, [participant1.address, participant2.address], [participant3.address], [participant5.address])
+                let pactParticipants = await pact.getParticipants(resultingEvent.uid)
+
+                expect(pactParticipants).to.eql([[participant1.address, participant2.address], [participant3.address], [participant5.address]])
             })
-            it("should not allow editing a non-editable pact", async function () {
-                let { resultingEvent } = await createNewPact(BigNumber.from(0), false)
-                let newText = "New text 01"
-                await expect(pact.setText(resultingEvent.uid || "", newText)).to.be.reverted
+
+            it("should create a pact with open participation, fixed yes and refund no, and vice versa", async function () {
+                let votingInfo: VotingInfoStruct = {
+                    votingEnabled: true,
+                    openParticipation: true,
+                    refundOnVotedYes: true,
+                    refundOnVotedNo: false,
+                    votingConcluded: true,  //Should overwrite this
+                    duration: BigNumber.from(3600),
+                    votingStartTimestamp: BigNumber.from(0),
+                    minContribution: BigNumber.from(1000)
+                }
+                let { resultingEvent, tx } = await createNewPact(BigNumber.from(0), votingInfo, [], [participant2.address], [participant5.address])
+
+                let pactParticipants = await pact.getParticipants(resultingEvent.uid)
+                expect(pactParticipants).to.eql([[], [], [participant5.address]])
+
+                votingInfo.votingConcluded = false
+                votingInfo.votingStartTimestamp = BigNumber.from((await ethers.provider.getBlock(tx.blockNumber)).timestamp).add(30 * 60)
+                compareVotingInfo(votingInfo, await pact.votingInfo(resultingEvent.uid))
+
+                votingInfo.refundOnVotedNo = true
+                resultingEvent = (await createNewPact(BigNumber.from(0), votingInfo, [], [participant2.address], [participant5.address])).resultingEvent
+                votingInfo.votingStartTimestamp = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber() - 1)).timestamp).add(30 * 60)
+                compareVotingInfo(votingInfo, (await pact.votingInfo(resultingEvent.uid)))
+                pactParticipants = await pact.getParticipants(resultingEvent.uid)
+                expect(pactParticipants).to.eql([[], [], []])
+            })
+
+            it("should create a pact with closed participation", async function () {
+                //Closed participation
+                let { resultingEvent, tx } = (await createNewPact())
+                let votingInfo = Object.assign({}, defaultVotingInfo)
+                votingInfo.votingStartTimestamp = BigNumber.from((await ethers.provider.getBlock(tx.blockNumber)).timestamp + 30 * 60)
+                compareVotingInfo(votingInfo, await pact.votingInfo(resultingEvent.uid))
+                let pactParticipants = await pact.getParticipants(resultingEvent.uid)
+                expect(pactParticipants).to.eql([defaultVoters, defaultFixedBeneficiaries, []])
+            })
+
+            it("should revert on less than min contribution on open participation", async function () {
+                let votingInfo = Object.assign({}, defaultVotingInfo)
+                votingInfo.openParticipation = true
+                votingInfo.minContribution = BigNumber.from(10)
+                await expect(createNewPact(BigNumber.from(0), votingInfo)).to.be.reverted
+
+                votingInfo.minContribution = BigNumber.from(1000)
+                await expect(await createNewPact(BigNumber.from(0), votingInfo)).to.not.be.reverted
+            })
+
+            it("should revert on not having yes or no beneficiaries", async function () {
+                let votingInfo = Object.assign({}, defaultVotingInfo)
+                await expect(createNewPact(BigNumber.from(0), votingInfo, defaultVoters, [])).to.be.reverted
+
+                await expect(await createNewPact(BigNumber.from(0), votingInfo, defaultVoters, defaultFixedBeneficiaries)).to.not.be.reverted
+
+                votingInfo.refundOnVotedNo = false
+                await expect(createNewPact(BigNumber.from(0), votingInfo, defaultVoters, defaultFixedBeneficiaries, [])).to.be.reverted
+
+                await expect(await createNewPact(BigNumber.from(0), votingInfo, defaultVoters, defaultFixedBeneficiaries, [participant1.address])).to.not.be.reverted
+            })
+
+            it("should revert on incorrect voting duration", async function () {
+                let votingInfo = Object.assign({}, defaultVotingInfo)
+                votingInfo.duration = BigNumber.from(config.minOpenParticipationVotingPeriod).div(3)
+                await expect(createNewPact(BigNumber.from(0), votingInfo)).to.be.reverted
+
+                votingInfo.duration = BigNumber.from(config.maxVotingPeriod).add(10)
+                await expect(createNewPact(BigNumber.from(0), votingInfo)).to.be.reverted
+
+                votingInfo.duration = BigNumber.from(config.maxVotingPeriod).sub(1)
+                await expect(await createNewPact(BigNumber.from(0), votingInfo)).to.not.be.reverted
+            })
+
+            it("should let edit a pact if it is editble", async function () {
+                let { resultingEvent, tx } = await createNewPact(BigNumber.from(0), defaultVotingInfo, defaultVoters, defaultFixedBeneficiaries, [], true)
+                await expect(await pact.setText(resultingEvent.uid, "New text")).to.not.be.reverted
+
+                expect((await pact.pacts(resultingEvent.uid)).pactText).to.eq("New text")
+
+                resultingEvent = (await createNewPact(BigNumber.from(0), defaultVotingInfo, defaultVoters, defaultFixedBeneficiaries, [], false)).resultingEvent
+
+                await expect(pact.setText(resultingEvent.uid, "new text")).to.be.reverted
             })
         })
 
@@ -96,286 +239,298 @@ describe("WordPactUpgradeable", function () {
             let balanceAfter = await ethers.provider.getBalance(pact.address)
             expect(balanceAfter).to.eq(balanceBefore.add(value))
 
-            let contributionAfter = await pact.contributions(resultingEvent.uid, creator.address)
+            let contributionAfter = (await pact.userInteractionData(resultingEvent.uid, creator.address)).contribution
             expect(contributionAfter).to.eq(value)
 
             expect((await pact.pacts(resultingEvent.uid)).totalValue).to.eq(value)
         })
 
-        it("should allow withdrawing contribution when no timelock", async function () {
-            let value = BigNumber.from(1000)
-            let pactDetails = await createNewPact(value)
-            let balanceBefore = await ethers.provider.getBalance(creator.address)
-            let tx = await (await pact.withDrawContribution(pactDetails.resultingEvent.uid, value)).wait()
-            let balanceAfter = await ethers.provider.getBalance(creator.address)
-            expect(balanceAfter).to.eq(balanceBefore.add(value).sub(tx.gasUsed.mul(tx.effectiveGasPrice)))
-        })
+        it("should allow pitching in and withdrawing contribution", async function () {
+            let value = parseUnits("1", "ether")
+            let votingInfo = Object.assign({}, defaultVotingInfo)
+            //Adding 20 to the previous block timestamp to ensure sufficient gap before next block
+            // votingInfo.votingStartTimestamp = BigNumber.from((await ethers.provider.getBlock(ethers.provider.blockNumber)).timestamp).add(20)
+            let { resultingEvent, tx } = await createNewPact(BigNumber.from(0), votingInfo)
+            //Pitch in first time
+            await pact.connect(participant2).pitchIn(resultingEvent.uid, { value })
+            expect((await pact.pacts(resultingEvent.uid)).totalValue).to.eq(value)
 
-        it("should lock the balance with timelock enabled", async function () {
-            let maturitySeconds = 1000
-            let value = BigNumber.from(1000)
-            let timeLockEndTimestamp = Math.floor((new Date().getTime())/1000)+ maturitySeconds
-            let { resultingEvent } = await createNewPact(value, false, "t",  timeLockEndTimestamp)
-            expect((await pact.pacts(resultingEvent.uid)).timeLockEndTimestamp).to.eq(timeLockEndTimestamp)
-            await expect(pact.withDrawContribution(resultingEvent.uid, value)).to.be.reverted
-        })
+            //Check balance after withdrawal
+            let accBalanceBefore = await ethers.provider.getBalance(participant2.address);
+            let withdrawTxReceipt = await (await pact.connect(participant2).
+                withDrawContribution(resultingEvent.uid, value)).wait()
+            expect((await pact.pacts(resultingEvent.uid)).totalValue).to.eq(BigNumber.from(0))
+            let accBalanceAfter = await ethers.provider.getBalance(participant2.address)
+            expect(accBalanceAfter.add(withdrawTxReceipt.gasUsed.mul(withdrawTxReceipt.effectiveGasPrice))).to.eq(accBalanceBefore.add(value))
 
-        it("should allow withdrawals post the timelock period", async function () {
-            let maturitySeconds = 2
-            let timeLockEndTimestamp = Math.floor((new Date().getTime())/1000)+ maturitySeconds
-            let value = BigNumber.from(1000)
-            let { resultingEvent } = await createNewPact(value, false, "t", timeLockEndTimestamp)
-
-            console.log("Waiting...")
-            //Creating a 1.5 second delay in thread
-            await new Promise(f => setTimeout(f, maturitySeconds * 1000));
-            let balanceBefore = await ethers.provider.getBalance(creator.address)
-            let tx = await (await pact.withDrawContribution(resultingEvent.uid, value)).wait()
-            let balanceAfter = await ethers.provider.getBalance(creator.address)
-            expect(balanceAfter).to.eq(balanceBefore.add(value).sub(tx.gasUsed.mul(tx.effectiveGasPrice)))
+            //Pitch in again
+            await pact.connect(participant2).pitchIn(resultingEvent.uid, { value })
+            expect((await pact.pacts(resultingEvent.uid)).totalValue).to.eq(value)
         })
     })
 
-
-    if (testWithParticipants) describe("Adding and managing participants", function () {
-        it("should allow deploying with mutliple participants", async function () {
-            let maturitySeconds = 1000
-            let value = BigNumber.from(1000)
-            let particpantAddresses_: any = [participant1.address, participant2.address]
-            let participantsCanVoteArray_: any = [false, false]
-            let beneficiaryTypes: any = [0, 0]
-            let { resultingEvent } = await createNewPact(value, false, "t", maturitySeconds, particpantAddresses_, participantsCanVoteArray_, beneficiaryTypes)
-            // let createdPact = await pact.pacts(resultingEvent.uid)
-            let participants = await pact.getParticipants(resultingEvent.uid)
-            expect(participants.length).to.eq(2)
-            expect(participants[0].addr).to.eq(participant1.address)
-            expect(participants[1].addr).to.eq(participant2.address)
+    if (testAfterCreation) describe("After creation", function () {
+        it("should allow adding voters", async function () {
+            let { resultingEvent, tx } = await createNewPact()
+            let voters = (await pact.getParticipants(resultingEvent.uid))[0]
+            expect(voters).to.eql(defaultVoters)
+            await pact.addVoters(resultingEvent.uid, [participant4.address, participant5.address])
+            voters = (await pact.getParticipants(resultingEvent.uid))[0]
+            expect(voters).to.eql([...defaultVoters, participant4.address, participant5.address])
         })
 
-        it("should allow adding participants to a deployed pact", async function () {
-            let { resultingEvent } = await createNewPact()
-            await pact.addParticipants(resultingEvent.uid, [{ addr: participant1.address, canVote: false, beneficiaryType: 0 }])
-            let participants = await pact.getParticipants(resultingEvent.uid)
-            expect(participants.length).to.eq(1)
-            expect(participants[0].addr).to.eq(participant1.address)
+        it("should not allow adding voters by address other than creator", async function () {
+            let { resultingEvent, tx } = await createNewPact()
+            await expect(pact.connect(participant2).addVoters(resultingEvent.uid, [participant4.address, participant5.address])).to.be.reverted
+        })
+
+        it("should allow postponing start voting timestamp by 24 hours", async function () {
+            let { resultingEvent, tx } = await createNewPact()
+            let currVotingStartTs = (await pact.votingInfo(resultingEvent.uid)).votingStartTimestamp
+            await pact.postponeVotingWindow(resultingEvent.uid)
+            expect(currVotingStartTs + 24 * 60 * 60).eq((await pact.votingInfo(resultingEvent.uid)).votingStartTimestamp)
         })
     })
 
-    if(testVoting) describe("Test Voting", async function(){
-        let party1: party, party2: party, party3: party, party4: party
+    if (testVotingActive) describe("Test Voting Active", function () {
+        let resultingEvent: any, tx: any;
+        this.beforeAll(async function () {
+            let votingInfo = Object.assign({}, defaultVotingInfo)
+            //Adding 20 to the previous block timestamp to ensure sufficient gap before next block
+            votingInfo.votingStartTimestamp = BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp).add(5)
+            // votingInfo.votingStartTimestamp = BigNumber.from(Math.ceil(new Date().getTime() / 1000)).add(10)
+            votingInfo.duration = BigNumber.from(1000)
 
-        this.beforeAll(async () => {
-            party1 = { addr: participant1.address, canVote: true, beneficiaryType: 1 }  //YES Ben
-            party2 = { addr: participant2.address, canVote: true, beneficiaryType: 2 }  //NO  Ben
-            party3 = { addr: participant3.address, canVote: true, beneficiaryType: 1 }  //YES Ben
-            party4 = { addr: participant4.address, canVote: true, beneficiaryType: 1 }  //YES Ben
+            let createdPact = await createNewPact(BigNumber.from(0), votingInfo)
+            resultingEvent = createdPact.resultingEvent
+            tx = createdPact.tx
+            console.log("Waiting for 5 seconds...")
+            await new Promise(f => setTimeout(f, 5 * 1000));
         })
 
-        if(false)
-        it("should allow choosing and retrieving yes and no vote outcomes", async function() {
-            let value = BigNumber.from(1000)
-            let { resultingEvent } = await createNewPact(value)
-            await pact.addParticipants(resultingEvent.uid, [party1, party2])
-            let createdPact = await pact.pacts(resultingEvent.uid)
-            let participants = await pact.getParticipants(resultingEvent.uid)
-            expect(participants[0].beneficiaryType).to.eq(1)
-            expect(participants[1].beneficiaryType).to.eq(2)
+        it("should not allow withdraw contribution", async function () {
+            await pact.connect(participant2).pitchIn(resultingEvent.uid, { value: BigNumber.from(1000) })
+            expect((await pact.pacts(resultingEvent.uid)).totalValue).to.eq(BigNumber.from(1000))
+            await expect(pact.connect(participant2).withDrawContribution(resultingEvent.uid, BigNumber.from(1000))).to.be.reverted
         })
 
-        if(false)
-        it("should allow starting vote with a fixed timeline, not allow voting after that", async function(){
-            let value = BigNumber.from(1000)
-            let { resultingEvent } = await createNewPact(value)
-            await pact.addParticipants(resultingEvent.uid, [party1, party2])
+        it("should not allow adding voters", async function () {
+            await expect(pact.addVoters(resultingEvent.uid, [participant4.address])).to.be.reverted
+        })
+        it("should not allow postponing voting window", async function () {
+            await expect(pact.postponeVotingWindow(resultingEvent.uid)).to.be.reverted
+        })
+
+        it("should allow pitching in, but should not allow withdraw", async function () {
+            await pact.connect(participant2).pitchIn(resultingEvent.uid, { value: BigNumber.from(1000) })
+            //Voting should be active by now
+            await expect(pact.connect(participant2).withDrawContribution(resultingEvent.uid, BigNumber.from(1000))).to.be.reverted
+        })
+
+        it("should allow added voters to cast vote, but only once", async function () {
+            let pactData = await pact.pacts(resultingEvent.uid)
+            await expect(await pact.connect(participant1).voteOnPact(resultingEvent.uid, true)).to.not.be.reverted
+            await expect(await pact.connect(participant2).voteOnPact(resultingEvent.uid, false)).to.not.be.reverted
+
+
+            let pactDataAfter = await pact.pacts(resultingEvent.uid)
+            expect(pactData.yesVotes + 1).to.eq(pactDataAfter.yesVotes)
+            expect(pactData.noVotes + 1).to.eq(pactDataAfter.noVotes)
 
             await expect(pact.connect(participant1).voteOnPact(resultingEvent.uid, true)).to.be.reverted
-            await pact.startVotingWindow(resultingEvent.uid, 2, false)
-            await expect(await pact.connect(participant2).voteOnPact(resultingEvent.uid, false)).to.not.be.reverted
-            await new Promise(f => setTimeout(f, 2200));
-            await expect(pact.connect(participant3).voteOnPact(resultingEvent.uid, true)).to.be.reverted
-
-            let resultingNoVotes = (await pact.pacts(resultingEvent.uid)).noVotes
-            let resultingYesVotes = (await pact.pacts(resultingEvent.uid)).yesVotes
-            expect(resultingNoVotes).to.eq(1)
-            expect(resultingYesVotes).to.eq(0)
-        })
-
-        it("should disburse the yes and no vote beneficiaries after voting ends", async function(){
-            let value = BigNumber.from(1000)
-            let { resultingEvent } = await createNewPact(value)
-            
-            await pact.addParticipants(resultingEvent.uid, [party1, party2, party3, party4])
-            
-            await pact.startVotingWindow(resultingEvent.uid, 8, false)
-
-            await expect(await pact.connect(participant1).voteOnPact(resultingEvent.uid, true)).to.not.be.reverted
-            await expect(await pact.connect(participant2).voteOnPact(resultingEvent.uid, true)).to.not.be.reverted
             await expect(await pact.connect(participant3).voteOnPact(resultingEvent.uid, true)).to.not.be.reverted
-            await expect(await pact.connect(participant4).voteOnPact(resultingEvent.uid, false)).to.not.be.reverted
-            
-            await new Promise(f => setTimeout(f, 4000));
-
-            let balancesBefore = [
-                await ethers.provider.getBalance(participant1.address),
-                await ethers.provider.getBalance(participant2.address),
-                await ethers.provider.getBalance(participant3.address),
-                await ethers.provider.getBalance(participant4.address),
-            ]
-
-            await pact.connect(participant1).concludeVoting(resultingEvent.uid);
-            // Count votes
-            let resultingNoVotes = (await pact.pacts(resultingEvent.uid)).noVotes
-            let resultingYesVotes = (await pact.pacts(resultingEvent.uid)).yesVotes
-            expect(resultingNoVotes).to.eq(1)
-            expect(resultingYesVotes).to.eq(3)
-
-            let balancesAfter = [
-                await ethers.provider.getBalance(participant1.address),
-                await ethers.provider.getBalance(participant2.address),
-                await ethers.provider.getBalance(participant3.address),
-                await ethers.provider.getBalance(participant4.address),
-            ]
-            //Check balances
-            // expect(balancesAfter[0].sub(balancesBefore[0])).to.eq(value.div(3).toBigInt())
-            expect(balancesAfter[1].sub(balancesBefore[1])).to.eq(0)
-            expect(balancesAfter[2].sub(balancesBefore[2])).to.eq(value.div(3).toBigInt())
-            expect(balancesAfter[3].sub(balancesBefore[3])).to.eq(value.div(3).toBigInt())
         })
 
-        it("should allow pitching in and refund all amounts on no vote, if refundOnVotedNo selected", async function(){
-            let value = ethers.utils.parseUnits("1", "ether")
-            let { resultingEvent } = await createNewPact(value)
-            await pact.addParticipants(resultingEvent.uid, [party1, party2, party3, party4])
-            
-            //Participant1 pitches in extra
-            await pact.connect(participant1).pitchIn(resultingEvent.uid, {value})
-
-            // await pact.setRefundOnVotedNo(resultingEvent.uid, true)
-
-            //Allow refund on motion fail
-            await pact.startVotingWindow(resultingEvent.uid, 4, true)
-
-            //All voting NO
-            await expect(await pact.connect(participant1).voteOnPact(resultingEvent.uid, false)).to.not.be.reverted
-            await expect(await pact.connect(participant2).voteOnPact(resultingEvent.uid, false)).to.not.be.reverted
-
-            let balancesBefore = [
-                await ethers.provider.getBalance(participant1.address),
-                await ethers.provider.getBalance(participant2.address),
-                await ethers.provider.getBalance(participant3.address),
-                await ethers.provider.getBalance(participant4.address),
-            ]
-
-            await new Promise(f => setTimeout(f, 4000));
-            await pact.connect(participant1).concludeVoting(resultingEvent.uid)
-
-            let balancesAfter = [
-                await ethers.provider.getBalance(participant1.address),
-                await ethers.provider.getBalance(participant2.address),
-                await ethers.provider.getBalance(participant3.address),
-                await ethers.provider.getBalance(participant4.address),
-            ]
-
-            //Balances shouldn't change at this point
-            for(let i=1; i<balancesAfter.length; i++) expect(balancesBefore[i]).to.eq(balancesAfter[i])
-
-            let party1Contri = await pact.contributions(resultingEvent.uid, participant1.address)
-            let tx = await (await pact.connect(participant1).withDrawContribution(resultingEvent.uid, party1Contri)).wait()
-            expect(await ethers.provider.getBalance(participant1.address)).to.eq(balancesAfter[0].add(value).sub( tx.gasUsed.mul(tx.effectiveGasPrice)))
-
+        it("should not allow non-voters to cast vote", async function () {
+            await expect(pact.connect(participant5).voteOnPact(resultingEvent.uid, false)).to.be.reverted
         })
 
-        it("should not allow participants to be added during voting", async function(){
-            let { resultingEvent } = await createNewPact()
-            await pact.addParticipants(resultingEvent.uid, [party1])
-            await pact.startVotingWindow(resultingEvent.uid, 2,false)
-            await expect (pact.addParticipants(resultingEvent.uid, [party2])).to.be.reverted
+    })
+
+    if (testVotingResults) describe("Test voting results", function () {
+        let openVotedYesFixed: any, openVotedYesRefund: any, openVotedNoFixed: any, openVotedNoRefund: any
+        let closedVotedYesFixed: any, closedVotedYesRefund: any, closedVotedNoFixed: any, closedVotedNoRefund: any
+        this.beforeAll(async function () {
+            let votingInfo = {
+                votingEnabled: true,
+                openParticipation: false,
+                refundOnVotedYes: true,
+                refundOnVotedNo: true,
+                votingConcluded: false,
+                duration: BigNumber.from("40"),
+                // votingStartTimestamp: BigNumber.from(Math.ceil(new Date().getTime() / 1000)).add(25),
+                votingStartTimestamp: BigNumber.from((await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp).add(10),
+                minContribution: BigNumber.from("0")
+            }
+
+            //Four Scenarios for closed voting
+
+            //1
+            votingInfo.refundOnVotedYes = false
+            closedVotedYesFixed = (await createNewPact(BigNumber.from(0), votingInfo, defaultVoters, defaultFixedBeneficiaries)).resultingEvent
+
+            //2
+            votingInfo.refundOnVotedYes = true
+            closedVotedYesRefund = (await createNewPact(BigNumber.from(0), votingInfo)).resultingEvent
+
+            //3
+            votingInfo.refundOnVotedNo = true
+            closedVotedNoRefund = (await createNewPact(BigNumber.from(0), votingInfo)).resultingEvent
+
+            //4 - with added min contribution
+            votingInfo.refundOnVotedNo = false
+            votingInfo.minContribution = BigNumber.from(config.minOpenParticipationAmount)
+            closedVotedNoFixed = (await createNewPact(BigNumber.from(0), votingInfo, defaultVoters, [], defaultFixedBeneficiaries)).resultingEvent
+
+            //Four scenarios for open voting
+            votingInfo.openParticipation = true
+            votingInfo.minContribution = BigNumber.from(config.minOpenParticipationAmount)
+
+            votingInfo.refundOnVotedYes = false
+            votingInfo.refundOnVotedNo = true
+            openVotedYesFixed = (await createNewPact(BigNumber.from(0), votingInfo, defaultVoters, defaultFixedBeneficiaries)).resultingEvent
+
+            votingInfo.refundOnVotedYes = true
+            openVotedYesRefund = (await createNewPact(BigNumber.from(0), votingInfo)).resultingEvent
+
+            votingInfo.refundOnVotedNo = false
+
+            openVotedNoFixed = (await createNewPact(BigNumber.from(0), votingInfo, [], [], defaultFixedBeneficiaries)).resultingEvent
+
+            votingInfo.refundOnVotedNo = true
+            openVotedNoRefund = (await createNewPact(BigNumber.from(0), votingInfo)).resultingEvent
+
+            await pitchInThousand(
+                [
+                    openVotedYesFixed.uid,
+                    openVotedYesRefund.uid,
+                    openVotedNoFixed.uid,
+                    openVotedNoRefund.uid,
+                    closedVotedYesFixed.uid,
+                    closedVotedYesRefund.uid,
+                    closedVotedNoRefund.uid,
+                ]
+            )
+
+            // console.log("Waiting for 4 seconds...")
+            // await new Promise(f => setTimeout(f, 4 * 1000));
+
+            //Vote on closed vote pacts - 3 participant voters
+            await pact.connect(participant1).voteOnPact(closedVotedYesFixed.uid, true)
+            await pact.connect(participant2).voteOnPact(closedVotedYesFixed.uid, true)
+            await pact.connect(participant3).voteOnPact(closedVotedYesFixed.uid, false)
+
+            await pact.connect(participant1).voteOnPact(closedVotedYesRefund.uid, true)
+            await pact.connect(participant2).voteOnPact(closedVotedYesRefund.uid, true)
+            await pact.connect(participant3).voteOnPact(closedVotedYesRefund.uid, false)
+
+            await pact.connect(participant1).voteOnPact(closedVotedNoRefund.uid, false)
+            await pact.connect(participant2).voteOnPact(closedVotedNoRefund.uid, false)
+            await pact.connect(participant3).voteOnPact(closedVotedNoRefund.uid, true)
+
+            //This one has min contribution
+            await pact.connect(participant1).pitchIn(closedVotedNoFixed.uid, { value: votingInfo.minContribution })
+            await pact.connect(participant1).voteOnPact(closedVotedNoFixed.uid, false)
+            await expect(pact.connect(participant2).voteOnPact(closedVotedNoFixed.uid, false)).to.be.reverted
+            await pact.connect(participant2).pitchIn(closedVotedNoFixed.uid, { value: votingInfo.minContribution })
+            await expect(await pact.connect(participant2).voteOnPact(closedVotedNoFixed.uid, false)).to.not.be.reverted
+            await expect(pact.connect(participant3).voteOnPact(closedVotedNoFixed.uid, true)).to.be.reverted
+            await pact.connect(participant3).pitchIn(closedVotedNoFixed.uid, { value: votingInfo.minContribution })
+            await expect(await pact.connect(participant3).voteOnPact(closedVotedNoFixed.uid, true)).to.not.be.reverted
+
+            //Vote on Open pacts
+            await pact.connect(participant1).voteOnPact(openVotedYesFixed.uid, true)
+            await pact.connect(participant1).voteOnPact(openVotedYesRefund.uid, true)
+            await pact.connect(participant1).voteOnPact(openVotedNoFixed.uid, false)
+            await pact.connect(participant1).voteOnPact(openVotedNoRefund.uid, false)
+
+            console.log("Waiting for 8 seconds...")
+            await new Promise(f => setTimeout(f, 8 * 1000));
+        })
+
+
+        it("should not let non-voters conclude", async function () {
+            await expect(pact.connect(participant5).concludeVoting(closedVotedYesFixed.uid)).to.be.reverted
+            await expect(pact.connect(participant5).concludeVoting(closedVotedYesFixed.uid)).to.be.reverted
+            await expect(pact.connect(participant5).concludeVoting(closedVotedNoFixed.uid)).to.be.reverted
+            await expect(pact.connect(participant5).concludeVoting(closedVotedYesRefund.uid)).to.be.reverted
+            await expect(pact.connect(participant5).concludeVoting(closedVotedNoRefund.uid)).to.be.reverted
+        })
+
+
+        it("should let a voter conclude results, and disburse correctly for closed voters", async function () {
+            let closedVotedYesFixedData = await pact.pacts(closedVotedYesFixed.uid)
+            let closedVotedNoFixedData = await pact.pacts(closedVotedNoFixed.uid)
+            let closedVotedYesRefundData = await pact.pacts(closedVotedYesRefund.uid)
+            let closedVotedNoRefundData = await pact.pacts(closedVotedNoRefund.uid)
+            let grants
+
+            expect(closedVotedYesFixedData.totalValue).to.eq(3000)
+            expect(closedVotedNoFixedData.totalValue).to.eq(3000)
+            expect(closedVotedYesRefundData.totalValue).to.eq(3000)
+            expect(closedVotedNoRefundData.totalValue).to.eq(3000)
+            grants = await Promise.all(defaultFixedBeneficiaries.map(async function (e) { return await pact.grants(e) }))
+
+            //Conclude voting - and keep checking grants
+            let grantDelta = 3000 / grants.length
+            await pact.connect(participant1).concludeVoting(closedVotedYesFixed.uid)
+            grants = await Promise.all(defaultFixedBeneficiaries.map(async function (e) { return await pact.grants(e) }))
+            expect(grants[0]).to.eq(grantDelta)
+            expect(grants[1]).to.eq(grantDelta)
+
+            grantDelta += 3000 / grants.length
+            await pact.connect(participant1).concludeVoting(closedVotedNoFixed.uid)
+            grants = await Promise.all(defaultFixedBeneficiaries.map(async function (e) { return await pact.grants(e) }))
+            expect(grants[0]).to.eq(grantDelta)
+            expect(grants[1]).to.eq(grantDelta)
+
+            await pact.connect(participant1).concludeVoting(closedVotedYesRefund.uid)
+            await pact.connect(participant1).concludeVoting(closedVotedNoRefund.uid)
+
+            //check the grants
+            expect(closedVotedYesFixedData.yesVotes).to.eq(2)
+            expect(closedVotedYesRefundData.noVotes).to.eq(1)
+            expect(closedVotedNoFixedData.noVotes).to.eq(2)
+            expect(closedVotedNoRefundData.yesVotes).to.eq(1)
+        })
+
+        it("should not let someone without minimum contribution to conclude for open voting", async function () {
+            await expect(pact.connect(participant5).concludeVoting(openVotedYesFixed.uid)).to.be.reverted
+            await expect(pact.connect(participant5).concludeVoting(openVotedYesRefund.uid)).to.be.reverted
+            await expect(pact.connect(participant5).concludeVoting(openVotedNoFixed.uid)).to.be.reverted
+            await expect(pact.connect(participant5).concludeVoting(openVotedNoRefund.uid)).to.be.reverted
+        })
+
+        it("should let a voter with min contribution to conclude for openParticipation", async function () {
+            let grants = await Promise.all(defaultFixedBeneficiaries.map(async function (e) { return await pact.grants(e) }))
+            let pactValue = (await pact.pacts(openVotedYesFixed.uid)).totalValue
+            let grantDelta = grants[0]
+
+            await pact.connect(participant1).concludeVoting(openVotedYesFixed.uid)
+            grants = await Promise.all(defaultFixedBeneficiaries.map(async function (e) { return await pact.grants(e) }))
+            grantDelta = grantDelta.add(pactValue.div(grants.length))
+            expect(grants[0]).to.eq(grantDelta)
+            expect(grants[1]).to.eq(grantDelta)
+
+            pactValue = (await pact.pacts(openVotedNoFixed.uid)).totalValue
+            await pact.connect(participant1).concludeVoting(openVotedNoFixed.uid)
+            grants = await Promise.all(defaultFixedBeneficiaries.map(async function (e) { return await pact.grants(e) }))
+            grantDelta = grantDelta.add(pactValue.div(grants.length))
+            expect(grants[0]).to.eq(grantDelta)
+            expect(grants[1]).to.eq(grantDelta)
+
+            expect((await pact.pacts(openVotedYesFixed.uid)).yesVotes).to.eq(1)
+            expect((await pact.pacts(openVotedYesRefund.uid)).yesVotes).to.eq(1)
+            expect((await pact.pacts(openVotedNoFixed.uid)).noVotes).to.eq(1)
+            expect((await pact.pacts(openVotedNoRefund.uid)).noVotes).to.eq(1)
+
+            await pact.connect(participant1).concludeVoting(openVotedYesRefund.uid)
+            expect((await pact.pacts(openVotedYesRefund.uid)).refundAvailable).to.be.true
+
+            await pact.connect(participant1).concludeVoting(openVotedNoRefund.uid)
+            expect((await pact.pacts(openVotedNoRefund.uid)).refundAvailable).to.be.true
+
         })
     })
 
-    if(testCreateMemberList) describe("Test with Member lists", function() {
-
-        it("should allow creating member lists", async function(){
-            const listName = "abcdefghijklm"
-            await pact.createMembershipList(listName, [participant1.address, participant2.address, participant3.address, participant4.address, participant5.address])
-            let createdList = await pact.getListMembers(listName)
-            expect(createdList.length).to.eq(5)
-            expect(createdList.includes(participant1.address))
-            expect(createdList.includes(participant2.address))
-            expect(createdList.includes(participant3.address))
-            expect(createdList.includes(participant4.address))
-        })
-
-        it("should not allow creating short list names without donation", async function(){
-            const listName = "abcdefghij"
-            //Insufficient amount sent
-            await expect(pact.createMembershipList("a", [participant1.address])).to.be.reverted
-            await expect(pact.createMembershipList("ab", [participant1.address])).to.be.reverted
-            await expect(pact.createMembershipList("abcdef", [participant1.address])).to.be.reverted
-            
-            //Length greater than 11 characters, okay
-            await expect(await pact.createMembershipList("abcdefghijklmnopqrstuvwxyz", [participant1.address])).to.not.be.reverted
-            
-            //Supply correct value to the messsage
-            await expect(await pact.createMembershipList(listName, [participant1.address], {value: (await pact.donationMaxAmount()).div(listName.length)})).to.not.be.reverted
-            
-            //More value than required
-            await expect(pact.createMembershipList(listName, [participant1.address], {value: (await pact.donationMaxAmount()).div(listName.length).add(1)})).to.be.reverted
-        })
-
-        it("should allow adding admins to member list, and admin actions thereof", async function(){
-            const listName = "MyAdminListName"
-            await pact.createMembershipList(listName, [participant1.address])
-            await expect(await pact.addAdminForList(listName, participant2.address)).to.not.be.reverted;
-            await expect(await pact.connect(participant2).addMembersToList(listName, [participant3.address])).to.not.be.reverted
-
-            let membersNow = await pact.getListMembers(listName)
-            expect(membersNow.includes(participant1.address))
-            expect(membersNow.includes(participant3.address))
-            expect(membersNow.length).to.eq(2)
-        })
-
-        it("should allow removing members, including self", async function(){
-            const listName = "ForAllowRemovingMembers"
-            await pact.createMembershipList(listName, [participant1.address, participant2.address])
-            let membersNow = await pact.getListMembers(listName)
-            expect(membersNow.includes(participant1.address))
-
-            await pact.removeFromList(listName, 0, participant1.address)
-            membersNow = await pact.getListMembers(listName)
-            expect(membersNow.length).to.eq(1)
-
-            await pact.connect(participant2).removeFromList(listName, 0, participant2.address)
-            membersNow = await pact.getListMembers(listName)
-            expect(membersNow.length).to.eq(0)
-        })
-
-        it("should allow creating a pact with a member list", async function(){
-            const listName = "ForCreatingPactFromList"
-            await pact.createMembershipList(listName, [participant1.address, participant2.address])
-            let value = BigNumber.from(1000)
-            let { resultingEvent } = await createNewPact(value, false, "test", 0, [], [], [], listName, false)
-            // let createdPact = await pact.pacts(resultingEvent.uid)
-            expect(await pact.canVote(resultingEvent.uid, participant1.address)).to.be.true
-        })
-
-        it("should allow adding a list to a created pact", async function(){
-            const listName = "ForAllowingAddingFromList"
-            await pact.createMembershipList(listName, [participant1.address, participant2.address])
-            let value = BigNumber.from(1000)
-            let { resultingEvent } = await createNewPact(value, false, "test", 0, [], [], [], "", false)
-            // let createdPact = await pact.pacts(resultingEvent.uid)
-            expect(await pact.canVote(resultingEvent.uid, participant1.address)).to.be.false
-            await expect(await pact.addParticipantsFromList(resultingEvent.uid, listName)).to.not.be.reverted
-            expect(await pact.canVote(resultingEvent.uid, participant1.address)).to.be.true
-            expect(await pact.canVote(resultingEvent.uid, participant2.address)).to.be.true
-        })
-    })
-
-    if(false)
-    describe('random', function(){
-        it("test", async function(){
-        
-        })
-    })
 });

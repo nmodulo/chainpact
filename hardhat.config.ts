@@ -3,7 +3,7 @@ import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-abi-exporter";
 import 'hardhat-contract-sizer'
 import '@openzeppelin/hardhat-upgrades';
-// require("hardhat-gas-reporter");
+require("hardhat-gas-reporter");
 
 require("dotenv").config();
 
@@ -11,7 +11,7 @@ require("dotenv").config();
 const config: HardhatUserConfig = {
   solidity: "0.8.16",
   gasReporter: {
-    enabled: false
+    enabled: true
   },
   networks: {
     hardhat: {
