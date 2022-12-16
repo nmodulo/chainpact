@@ -4,7 +4,6 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "hardhat/console.sol";
 
 ///@dev Struct for storing overall contract configuration to be initialized
 struct Config {
@@ -34,6 +33,7 @@ struct PactData {
     bool refundAvailable;
     bool isEditable; //whether the pactText should be editable
     address creator; //Address of the author of original post
+    bytes32 groupName; 
     string pactText; //Textual summary of proposal
     // bytes32 memberList;
     address[] voters;
@@ -41,6 +41,7 @@ struct PactData {
     address[] noBeneficiaries;
 }
 
+///@dev Struct for storing all user related data
 struct PactUserInteraction {
     bool canVote;
     bool hasVoted;
@@ -78,21 +79,20 @@ contract WordPactUpgradeable is
     function isVotingActive(
         VotingInfo memory votingInfo_
     ) internal view returns (int) {
-        if(!votingInfo_.votingEnabled){
+        if (!votingInfo_.votingEnabled) {
             return -100;
         }
-        if(block.timestamp < votingInfo_.votingStartTimestamp){
+        if (block.timestamp < votingInfo_.votingStartTimestamp) {
             return -1;
         }
-        if(block.timestamp > votingInfo_.votingStartTimestamp + votingInfo_.duration){
+        if (
+            block.timestamp >
+            votingInfo_.votingStartTimestamp + votingInfo_.duration
+        ) {
             return 1;
         }
         return 0;
     }
-
-    // function getPactData(bytes32 pactid) external view returns (PactData memory){
-    //     return pacts[pactid];
-    // }
 
     function getParticipants(
         bytes32 pactid
@@ -117,6 +117,7 @@ contract WordPactUpgradeable is
     function createPact(
         VotingInfo memory votingInfo_,
         bool _isEditable,
+        bytes32 groupName,
         string calldata _pactText,
         address[] calldata _voters,
         address[] calldata _yesBeneficiaries,
@@ -135,15 +136,12 @@ contract WordPactUpgradeable is
         pactData.isEditable = _isEditable;
         pactData.pactText = _pactText;
         pactData.creator = msg.sender;
+        pactData.groupName = groupName;
         ///@dev voting related checks
         if (votingInfo_.votingEnabled) {
-            console.log("Voting Timestamp");
-            console.log(votingInfo_.votingStartTimestamp);
-            console.log("Block Timestamp");
-            console.log(block.timestamp);
             if (votingInfo_.votingStartTimestamp < block.timestamp) {
                 votingInfo_.votingStartTimestamp = uint40(
-                    block.timestamp + 30 * 60   //add half an hour grace period
+                    block.timestamp + 30 * 60 //add half an hour grace period
                 );
             }
             if (votingInfo_.openParticipation) {
@@ -164,13 +162,12 @@ contract WordPactUpgradeable is
             }
             require(votingInfo_.duration <= config_.maxVotingPeriod);
 
-            
             votingInfo_.votingConcluded = false;
-            if (!votingInfo_.refundOnVotedYes){
-                require( _yesBeneficiaries.length > 0);
+            if (!votingInfo_.refundOnVotedYes) {
+                require(_yesBeneficiaries.length > 0);
                 pactData.yesBeneficiaries = _yesBeneficiaries;
             }
-            if (!votingInfo_.refundOnVotedNo){
+            if (!votingInfo_.refundOnVotedNo) {
                 require(_noBeneficiaries.length > 0);
                 pactData.noBeneficiaries = _noBeneficiaries;
             }
@@ -184,7 +181,7 @@ contract WordPactUpgradeable is
         }
     }
 
-    function _addVoters(bytes32 pactid, address[] calldata _voters) internal{
+    function _addVoters(bytes32 pactid, address[] calldata _voters) internal {
         for (uint i = 0; i < _voters.length; i++) {
             if (!userInteractionData[pactid][_voters[i]].canVote) {
                 pacts[pactid].voters.push(_voters[i]);
@@ -219,12 +216,12 @@ contract WordPactUpgradeable is
     function withDrawContribution(bytes32 pactid, uint amount) external {
         //Checks
         VotingInfo memory votingInfo_ = votingInfo[pactid];
-        require(isVotingActive(votingInfo_) < 0, "Voting started");
-        require(amount <= pacts[pactid].totalValue);
+        require(
+            isVotingActive(votingInfo_) == -1 || pacts[pactid].refundAvailable,
+            "Withdraw unavailable"
+        );
         uint contri = userInteractionData[pactid][msg.sender].contribution;
         require(amount <= contri);
-        if (votingInfo_.votingConcluded)
-            require(pacts[pactid].refundAvailable, "Unavailable");
 
         //Effects
         userInteractionData[pactid][msg.sender].contribution = uint128(
@@ -247,9 +244,7 @@ contract WordPactUpgradeable is
     function postponeVotingWindow(bytes32 pactid) external {
         require(pacts[pactid].creator == msg.sender);
         VotingInfo memory votingInfo_ = votingInfo[pactid];
-        require(isVotingActive(votingInfo_) < 0);
-        require(votingInfo_.votingEnabled);
-        require(!votingInfo_.votingConcluded);
+        require(isVotingActive(votingInfo_) == -1);
         votingInfo[pactid].votingStartTimestamp =
             votingInfo_.votingStartTimestamp +
             24 *
@@ -263,9 +258,10 @@ contract WordPactUpgradeable is
         ];
         VotingInfo memory votingInfo_ = votingInfo[_pactid];
         int votingStatus = isVotingActive(votingInfo_);
-        if(votingStatus == -1) revert("Voting not started");
-        else if(votingStatus == 1) revert("Voting over");
-        else if(votingStatus == 100) revert("Voting disabled");
+        if (votingStatus == -1) revert("Voting not started");
+        require(votingStatus == 0, "Voting not active");
+        // else if(votingStatus == 1) revert("Voting over");
+        // else if(votingStatus == 100) revert("Voting disabled");
         // require(isVotingActive(votingInfo_) == 0, "Voting inactive");
         require(userData_.canVote || votingInfo_.openParticipation);
         require(!userData_.hasVoted);
@@ -286,10 +282,13 @@ contract WordPactUpgradeable is
         VotingInfo memory votingInfo_ = votingInfo[pactid];
         require(isVotingActive(votingInfo_) == 1, "Voting not over");
         require(!votingInfo_.votingConcluded);
-        require(userInteractionData[pactid][msg.sender].contribution >= votingInfo_.minContribution);
-        if(!votingInfo_.openParticipation){
+        if (!votingInfo_.openParticipation) {
             require(userInteractionData[pactid][msg.sender].canVote);
         }
+        require(
+            userInteractionData[pactid][msg.sender].contribution >=
+                votingInfo_.minContribution
+        );
 
         PactData memory pactData = pacts[pactid];
         if (pactData.totalValue == 0) return;
@@ -299,8 +298,9 @@ contract WordPactUpgradeable is
         if (pactData.yesVotes > pactData.noVotes) {
             if (votingInfo_.refundOnVotedYes) {
                 pacts[pactid].refundAvailable = true;
+            } else {
+                finalBeneficiaries = pactData.yesBeneficiaries;
             }
-            finalBeneficiaries = pactData.yesBeneficiaries;
         } else if (votingInfo_.refundOnVotedNo) {
             pacts[pactid].refundAvailable = true;
         } else {

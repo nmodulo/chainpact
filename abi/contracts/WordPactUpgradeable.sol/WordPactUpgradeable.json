@@ -86,6 +86,31 @@
         "type": "bytes32"
       },
       {
+        "indexed": true,
+        "internalType": "address",
+        "name": "payee",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "logAmountOut",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "uid",
+        "type": "bytes32"
+      },
+      {
         "indexed": false,
         "internalType": "address",
         "name": "payer",
@@ -99,25 +124,6 @@
       }
     ],
     "name": "logContribution",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "creator",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "listName",
-        "type": "string"
-      }
-    ],
-    "name": "logMembershipListCreated",
     "type": "event"
   },
   {
@@ -149,165 +155,25 @@
         "type": "bytes32"
       }
     ],
-    "name": "logVotingEnded",
+    "name": "logvotingConcluded",
     "type": "event"
   },
   {
-    "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
         "internalType": "bytes32",
-        "name": "uid",
+        "name": "pactid",
         "type": "bytes32"
-      }
-    ],
-    "name": "logVotingStarted",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "listName_",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "newAdmin_",
-        "type": "address"
-      }
-    ],
-    "name": "addAdminForList",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "listName_",
-        "type": "string"
       },
       {
         "internalType": "address[]",
-        "name": "members_",
+        "name": "_voters",
         "type": "address[]"
       }
     ],
-    "name": "addMembersToList",
+    "name": "addVoters",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "pactid",
-        "type": "bytes32"
-      },
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "addr",
-            "type": "address"
-          },
-          {
-            "internalType": "bool",
-            "name": "canVote",
-            "type": "bool"
-          },
-          {
-            "internalType": "enum BeneficiaryType",
-            "name": "beneficiaryType",
-            "type": "uint8"
-          }
-        ],
-        "internalType": "struct Participant[]",
-        "name": "participants_",
-        "type": "tuple[]"
-      }
-    ],
-    "name": "addParticipants",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "pactid",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "string",
-        "name": "listName",
-        "type": "string"
-      }
-    ],
-    "name": "addParticipantsFromList",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "calcUid",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "uid",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "canVote",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "canWithdrawContribution",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -326,162 +192,86 @@
   {
     "inputs": [
       {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "contributions",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "listName_",
-        "type": "string"
-      },
-      {
-        "internalType": "address[]",
-        "name": "members_",
-        "type": "address[]"
-      }
-    ],
-    "name": "createMembershipList",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bool",
-        "name": "isEditable_",
-        "type": "bool"
-      },
-      {
-        "internalType": "string",
-        "name": "pactText_",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "timeLockEndTimestamp_",
-        "type": "uint256"
-      },
-      {
         "components": [
           {
-            "internalType": "address",
-            "name": "addr",
-            "type": "address"
-          },
-          {
             "internalType": "bool",
-            "name": "canVote",
+            "name": "votingEnabled",
             "type": "bool"
           },
           {
-            "internalType": "enum BeneficiaryType",
-            "name": "beneficiaryType",
-            "type": "uint8"
+            "internalType": "bool",
+            "name": "openParticipation",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "refundOnVotedYes",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "refundOnVotedNo",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "votingConcluded",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint40",
+            "name": "duration",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint40",
+            "name": "votingStartTimestamp",
+            "type": "uint40"
+          },
+          {
+            "internalType": "uint128",
+            "name": "minContribution",
+            "type": "uint128"
           }
         ],
-        "internalType": "struct Participant[]",
-        "name": "participants_",
-        "type": "tuple[]"
-      },
-      {
-        "internalType": "string",
-        "name": "memberList_",
-        "type": "string"
+        "internalType": "struct VotingInfo",
+        "name": "votingInfo_",
+        "type": "tuple"
       },
       {
         "internalType": "bool",
-        "name": "enableWithdrawingContribution",
+        "name": "_isEditable",
         "type": "bool"
-      }
-    ],
-    "name": "createPact",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "uid",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "donationAccount",
-    "outputs": [
-      {
-        "internalType": "address payable",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "donationMaxAmount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "pactid",
-        "type": "bytes32"
-      }
-    ],
-    "name": "enableWithdrawContribution",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+      },
       {
         "internalType": "string",
-        "name": "listName",
+        "name": "_pactText",
         "type": "string"
-      }
-    ],
-    "name": "getListMembers",
-    "outputs": [
+      },
+      {
+        "internalType": "bytes32",
+        "name": "groupName",
+        "type": "bytes32"
+      },
       {
         "internalType": "address[]",
-        "name": "",
+        "name": "_voters",
+        "type": "address[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_yesBeneficiaries",
+        "type": "address[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "_noBeneficiaries",
         "type": "address[]"
       }
     ],
-    "stateMutability": "view",
+    "name": "createPact",
+    "outputs": [],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -495,187 +285,76 @@
     "name": "getParticipants",
     "outputs": [
       {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      },
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "grants",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "components": [
           {
+            "internalType": "uint32",
+            "name": "maxVotingPeriod",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minOpenParticipationVotingPeriod",
+            "type": "uint32"
+          },
+          {
             "internalType": "address",
-            "name": "addr",
+            "name": "groupsContract",
             "type": "address"
           },
           {
-            "internalType": "bool",
-            "name": "canVote",
-            "type": "bool"
-          },
-          {
-            "internalType": "enum BeneficiaryType",
-            "name": "beneficiaryType",
-            "type": "uint8"
+            "internalType": "uint128",
+            "name": "minOpenParticipationAmount",
+            "type": "uint128"
           }
         ],
-        "internalType": "struct Participant[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "hasVoted",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_maxMaturityTime",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_maxVotingPeriod",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_donationMaxAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "donationAccount_",
-        "type": "address"
+        "internalType": "struct Config",
+        "name": "_config",
+        "type": "tuple"
       }
     ],
     "name": "initialize",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      },
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "name": "listAdmin",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "listsCounter",
-    "outputs": [
-      {
-        "internalType": "uint64",
-        "name": "",
-        "type": "uint64"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "maxMaturityTime",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "maxVotingPeriod",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "membershipLists",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "name": "minVotingContribution",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -702,21 +381,6 @@
     "name": "pacts",
     "outputs": [
       {
-        "internalType": "bool",
-        "name": "created",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "isEditable",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "refundOnVotedNo",
-        "type": "bool"
-      },
-      {
         "internalType": "uint32",
         "name": "yesVotes",
         "type": "uint32"
@@ -727,14 +391,19 @@
         "type": "uint32"
       },
       {
-        "internalType": "uint64",
-        "name": "timeLockEndTimestamp",
-        "type": "uint64"
+        "internalType": "uint128",
+        "name": "totalValue",
+        "type": "uint128"
       },
       {
-        "internalType": "uint64",
-        "name": "votingEndTimestamp",
-        "type": "uint64"
+        "internalType": "bool",
+        "name": "refundAvailable",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "isEditable",
+        "type": "bool"
       },
       {
         "internalType": "address",
@@ -742,32 +411,14 @@
         "type": "address"
       },
       {
-        "internalType": "uint256",
-        "name": "totalValue",
-        "type": "uint256"
+        "internalType": "bytes32",
+        "name": "groupName",
+        "type": "bytes32"
       },
       {
         "internalType": "string",
         "name": "pactText",
         "type": "string"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "memberList",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "pactsCounter",
-    "outputs": [
-      {
-        "internalType": "uint64",
-        "name": "",
-        "type": "uint64"
       }
     ],
     "stateMutability": "view",
@@ -787,6 +438,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "pactid",
+        "type": "bytes32"
+      }
+    ],
+    "name": "postponeVotingWindow",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "proxiableUUID",
     "outputs": [
@@ -797,29 +461,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "listName_",
-        "type": "string"
-      },
-      {
-        "internalType": "uint256",
-        "name": "indexToRemove",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "memberToRemove_",
-        "type": "address"
-      }
-    ],
-    "name": "removeFromList",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -843,29 +484,6 @@
       }
     ],
     "name": "setText",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes32",
-        "name": "pactid",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "uint64",
-        "name": "endTimeSeconds",
-        "type": "uint64"
-      },
-      {
-        "internalType": "bool",
-        "name": "ifRefundOnVotedNo",
-        "type": "bool"
-      }
-    ],
-    "name": "startVotingWindow",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -918,12 +536,51 @@
     "inputs": [
       {
         "internalType": "bytes32",
-        "name": "pactid",
+        "name": "",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "userInteractionData",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "canVote",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "hasVoted",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "castedVote",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint128",
+        "name": "contribution",
+        "type": "uint128"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "_pactid",
         "type": "bytes32"
       },
       {
         "internalType": "bool",
-        "name": "vote",
+        "name": "_vote",
         "type": "bool"
       }
     ],
@@ -940,12 +597,47 @@
         "type": "bytes32"
       }
     ],
-    "name": "votingActive",
+    "name": "votingInfo",
     "outputs": [
       {
         "internalType": "bool",
-        "name": "",
+        "name": "votingEnabled",
         "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "openParticipation",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "refundOnVotedYes",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "refundOnVotedNo",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "votingConcluded",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint40",
+        "name": "duration",
+        "type": "uint40"
+      },
+      {
+        "internalType": "uint40",
+        "name": "votingStartTimestamp",
+        "type": "uint40"
+      },
+      {
+        "internalType": "uint128",
+        "name": "minContribution",
+        "type": "uint128"
       }
     ],
     "stateMutability": "view",
@@ -970,7 +662,16 @@
     "type": "function"
   },
   {
-    "stateMutability": "payable",
-    "type": "receive"
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "withdrawGrant",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ]

@@ -57,7 +57,7 @@ async function createNewPact(
     pactText_: string = defaultPactText,
     memberListName = "",
 ) {
-    let tx = await (await pact.createPact(votingInfo, isEditable_, pactText_, voterAddresses, yesBeneficiaries, noBeneficiaries, { value })).wait()
+    let tx = await (await pact.createPact(votingInfo, isEditable_, formatBytes32String("test"), pactText_, voterAddresses, yesBeneficiaries, noBeneficiaries, { value })).wait()
 
     let resultingEvent = tx.events && tx.events[0].decode && tx.events[0].decode(tx.events[0].data)
 
