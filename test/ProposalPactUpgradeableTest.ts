@@ -16,12 +16,6 @@ async function setSigners() {
     [creator, participant1, participant2, participant3, participant4, participant5, arbitrator2, groupDummy] = await ethers.getSigners()
 }
 
-type party = {
-    addr: string
-    canVote: boolean
-    beneficiaryType: number
-}
-
 let defaultVoters: string[]
 let defaultFixedBeneficiaries: string[]
 const defaultPactText = "Test pact"

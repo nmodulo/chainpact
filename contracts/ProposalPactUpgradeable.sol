@@ -50,7 +50,7 @@ struct PactUserInteraction {
 }
 
 // UUPSUpgradeable
-contract WordPactUpgradeable is
+contract ProposalPactUpgradeable is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable

@@ -11,17 +11,17 @@ if(["ethereumMainnet", "kovan", "ropsten"].includes(network.name)){
 }
 
 async function main() {
- const WordPactUpgradeable = await ethers.getContractFactory("WordPactUpgradeable");
+ const ProposalPactUpgradeable = await ethers.getContractFactory("ProposalPactUpgradeable");
 
- console.log("Deploying WordPactUpgradeable ...");
+ console.log("Deploying ProposalPactUpgradeable ...");
 
- const wordPactUpgradeable = await upgrades.deployProxy(WordPactUpgradeable, [maxLockingPeriod, maxVotingPeriod, donationMaxAmount, donationAccount ], {
+ const proposalPactUpgradeable = await upgrades.deployProxy(ProposalPactUpgradeable, [maxLockingPeriod, maxVotingPeriod, donationMaxAmount, donationAccount ], {
    initializer: "initialize",
  });
- await wordPactUpgradeable.deployed();
+ await proposalPactUpgradeable.deployed();
 
- console.log("WordPactUpgradeable deployed to:", wordPactUpgradeable.address);
- console.log(wordPactUpgradeable)
+ console.log("ProposalPactUpgradeable deployed to:", proposalPactUpgradeable.address);
+ console.log(proposalPactUpgradeable)
 }
 
 main();
