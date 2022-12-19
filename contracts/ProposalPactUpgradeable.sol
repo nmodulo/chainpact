@@ -33,7 +33,7 @@ struct PactData {
     bool refundAvailable;
     bool isEditable; //whether the pactText should be editable
     address creator; //Address of the author of original post
-    bytes32 groupName; 
+    bytes32 groupName;
     string pactText; //Textual summary of proposal
     // bytes32 memberList;
     address[] voters;
@@ -171,9 +171,11 @@ contract ProposalPactUpgradeable is
                 require(_noBeneficiaries.length > 0);
                 pactData.noBeneficiaries = _noBeneficiaries;
             }
+            votingInfo[uid] = votingInfo_;
+        } else {
+            votingInfo[uid].votingConcluded = true;
         }
 
-        votingInfo[uid] = votingInfo_;
         pactsCounter++;
         emit logPactCreated(msg.sender, uid);
         if (msg.value > 0) {

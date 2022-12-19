@@ -2,13 +2,13 @@ import { assert, expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumberish, Contract } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { WordPactUpgradeable, WordPactUpgradeable__factory } from "../typechain-types";
-import { VotingInfoStruct, ConfigStruct } from "../typechain-types/contracts/WordPactUpgradeable"
+import { ProposalPactUpgradeable, ProposalPactUpgradeable__factory } from "../typechain-types";
+import { VotingInfoStruct, ConfigStruct } from "../typechain-types/contracts/ProposalPactUpgradeable"
 import { parseUnits } from "ethers/lib/utils";
 const Signer = ethers.Signer
 const BigNumber = ethers.BigNumber
 const formatBytes32String = ethers.utils.formatBytes32String
-let pact: WordPactUpgradeable
+let pact: ProposalPactUpgradeable
 
 let [creator, participant1, participant2, participant3, participant4, participant5, arbitrator2, groupDummy]: SignerWithAddress[] = []
 
@@ -79,7 +79,7 @@ function compareVotingInfo(votingInfo: VotingInfoStruct, votingInfoAfter: any) {
 }
 
 
-describe("WordPactUpgradeable", function () {
+describe("ProposalPactUpgradeable", function () {
 
     this.beforeAll(async () => {
         await setSigners()
@@ -87,7 +87,7 @@ describe("WordPactUpgradeable", function () {
         defaultFixedBeneficiaries = [participant4.address, participant5.address]
         config.groupsContract = groupDummy.address
 
-        let pactFactory: WordPactUpgradeable__factory = await ethers.getContractFactory("WordPactUpgradeable")
+        let pactFactory: ProposalPactUpgradeable__factory = await ethers.getContractFactory("ProposalPactUpgradeable")
         pact = await pactFactory.deploy()
         pact = await pact.deployed()
         await pact.initialize(config)
@@ -98,13 +98,13 @@ describe("WordPactUpgradeable", function () {
             it("Should create a pact with with voting disabled", async function () {
                 let votingInfo: VotingInfoStruct = {
                     votingEnabled: false,
-                    openParticipation: false,
+                    openParticipation: true,
                     refundOnVotedYes: false,
                     refundOnVotedNo: false,
                     votingConcluded: false,
                     duration: BigNumber.from(3600),
-                    votingStartTimestamp: BigNumber.from(0),
-                    minContribution: BigNumber.from(0)
+                    votingStartTimestamp: BigNumber.from(1000),
+                    minContribution: BigNumber.from(1000)
                 }
                 let { resultingEvent } = await createNewPact(BigNumber.from(0), votingInfo)
                 expect(resultingEvent.uid).to.have.length(66)
@@ -114,8 +114,18 @@ describe("WordPactUpgradeable", function () {
                 let votingInfoAfter = await pact.votingInfo(resultingEvent.uid)
                 let pactParticipants = await pact.getParticipants(resultingEvent.uid)
 
+                let blankVotingInfo: VotingInfoStruct = {
+                    votingEnabled: false,
+                    openParticipation: false,
+                    refundOnVotedYes: false,
+                    refundOnVotedNo: false,
+                    votingConcluded: true,
+                    duration: 0,
+                    votingStartTimestamp: 0,
+                    minContribution: 0
+                }
                 expect(pactData.creator).to.eq(creator.address)
-                compareVotingInfo(votingInfo, votingInfoAfter)
+                compareVotingInfo(blankVotingInfo, votingInfoAfter)
                 expect(pactParticipants[0].length).to.eq(0)
                 expect(pactParticipants[1].length).to.eq(0)
                 expect(pactParticipants[2].length).to.eq(0)

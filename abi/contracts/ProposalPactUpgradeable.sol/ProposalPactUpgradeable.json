@@ -244,14 +244,14 @@
         "type": "bool"
       },
       {
-        "internalType": "string",
-        "name": "_pactText",
-        "type": "string"
-      },
-      {
         "internalType": "bytes32",
         "name": "groupName",
         "type": "bytes32"
+      },
+      {
+        "internalType": "string",
+        "name": "_pactText",
+        "type": "string"
       },
       {
         "internalType": "address[]",
