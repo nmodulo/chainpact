@@ -4,6 +4,7 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
 enum PactState {
     DEPLOYED,
     RETRACTED,
@@ -26,29 +27,28 @@ enum PactState {
 
 struct PactData {
     bytes32 pactName;
-
-    address employee;
-    PactState pactState;
-    uint32 payScheduleDays;
-    bool arbitratorProposed;
-    bool arbitratorAccepted;
-
-    uint40 pauseDuration;
-    uint40 pauseResumeTime;
-    address employer;
-
-    uint40 employeeSignDate;
-    uint128 availableToWithdraw;
     
+    address employee;
+    uint40 employeeSignDate;
+    PactState pactState;
+    bool arbitratorAccepted;
+    bool arbitratorProposed;
+    uint32 payScheduleDays;
+    
+    address employer;
     uint128 payAmount;
     uint128 stakeAmount;
+    address arbitratorProposer;
+    Arbitrator[] proposedArbitrators;
+}
+
+struct PayData{
+    uint40 pauseDuration;
+    uint40 pauseResumeTime;
+    uint40 lastPayTimeStamp;
+    uint128 availableToWithdraw;
     uint128 lastPayAmount;
     uint128 proposedAmount;
-    
-    uint40 lastPayTimeStamp;
-    address arbitratorProposer;
-    
-    Arbitrator[] proposedArbitrators;
 }
 
 struct Arbitrator {
@@ -56,10 +56,6 @@ struct Arbitrator {
     bool hasResolved;
 }
 
-struct Payment {
-    uint128 amount;
-    uint40 timeStamp;
-}
 
 contract GigPactUpgradeable {
     event LogPaymentMade(
@@ -77,14 +73,24 @@ contract GigPactUpgradeable {
         PactState newState,
         address indexed updater
     );
+    event LogPactCreated(
+        address indexed creator,
+        bytes32 pactid
+    );
 
     //BAU
-    mapping(bytes32 => PactData) public pactData;
+    mapping(bytes32 => PactData) internal pactData;
+    mapping(bytes32 => PayData) internal payData;
     uint pactsCounter;
 
     //Constraint flags
     mapping(bytes32 => mapping(address => bool)) public isEmployeeDelegate;
     mapping(bytes32 => mapping(address => bool)) public isEmployerDelegate;
+
+    function getAllPactData(bytes32 pactid) external view returns (
+        PactData memory, PayData memory, Arbitrator[] memory){
+        return (pactData[pactid], payData[pactid], pactData[pactid].proposedArbitrators);
+    }
 
     //modifiers
     modifier onlyEmployer(bytes32 pactid) {
@@ -122,11 +128,12 @@ contract GigPactUpgradeable {
         _;
     }
 
+    //done dec 29
     function createPact(
         bytes32 pactName_,
         address employee_,
         address employer_,
-        uint128 payScheduleDays_,
+        uint32 payScheduleDays_,
         uint128 payAmount_
     ) external {
         require(payAmount_ > 0 && pactName_ != 0);
@@ -139,369 +146,382 @@ contract GigPactUpgradeable {
                 pactsCounter
             )
         );
-
-        pactData = PactData({
-            pactName: pactName_,
-            employee: employee_,
-            employer: employer_,
-            payScheduleDays: payScheduleDays_,
-            payAmount: payAmount_
-        });
-
-        pactData[uid] = pactData;
+        pactData[uid].pactName = pactName_ ;
+        pactData[uid].employee = employee_ ;
+        pactData[uid].employer = employer_ ;
+        pactData[uid].payScheduleDays = payScheduleDays_ ;
+        pactData[uid].payAmount = payAmount_ ;
         isEmployeeDelegate[uid][employee_] = true;
         isEmployerDelegate[uid][employer_] = true;
+        pactsCounter++;
+        emit LogPactCreated(msg.sender, uid);
     }
     
-    //Function to send the employer digital signature and stake amount
+    // Function to send the employer digital signature and stake amount
+    // done 29 dec
     function employerSign(
         bytes32 pactid,
         bytes calldata signature,
         uint256 signingDate_
     ) external payable returns (bool) {
-        PactState pactState_ = pactState;
-        (pactState_)
-        PactData memory pactData_ = pactData;
-        require(pactState_ < PactState.ALL_SIGNED, "Already signed");
+        PactData memory pactData_ = pactData[pactid];
+        require(pactData_.pactState < PactState.ALL_SIGNED, "Already signed");
         require(msg.value >= pactData_.payAmount, "Can't have zero stake");
         require(
-            recoverContractSigner(signature, signingDate_) ==
+            recoverContractSigner(pactid, signature, signingDate_) ==
                 pactData_.employer,
             "Employer Sign Invalid"
         );
 
-        stakeAmount = msg.value;
-        if (pactState_ == PactState.EMPLOYEE_SIGNED) {
-            pactState = PactState.ALL_SIGNED;
+        pactData[pactid].stakeAmount = uint128(msg.value);
+        if (pactData_.pactState == PactState.EMPLOYEE_SIGNED) {
+            pactData[pactid].pactState = PactState.ALL_SIGNED;
         } else {
-            pactState = PactState.EMPLOYER_SIGNED;
+            pactData[pactid].pactState = PactState.EMPLOYER_SIGNED;
         }
         return true;
     }
 
     // Function to retract the stake before the employee signs
-    function retractOffer(        bytes32 pactid,
-) external onlyEmployer returns (bool) {
-        require(pactState < PactState.ALL_SIGNED, "Contract already signed");
-        pactState = PactState.RETRACTED;
-        stakeAmount = 0;
-        payable(pactData.employer).transfer(stakeAmount);
+    function retractOffer(bytes32 pactid) external onlyEmployer(pactid) returns (bool) {
+        PactData memory pactData_ = pactData[pactid];
+        require(pactData_.pactState < PactState.ALL_SIGNED, "Contract already signed");
+        pactData[pactid].pactState = PactState.RETRACTED;
+        pactData[pactid].stakeAmount = 0;
+        payable(pactData[pactid].employer).transfer(pactData_.stakeAmount);
         return true;
     }
+
+        //Function for employee to send the digital signature
+    //done 29 dec
+    // function employeeSign(
+    //     bytes32 pactid,
+    //     bytes calldata signature,
+    //     uint40 signingDate_
+    // ) external payable returns (bool) {
+    //     PactData memory pactData_ = pactData[pactid];
+    //     require(pactData_.pactState < PactState.ALL_SIGNED, "Already signed");
+    //     require(
+    //         recoverContractSigner(pactid, signature, signingDate_) ==
+    //             pactData_.employee,
+    //         "Employee Sign Invalid"
+    //     );
+    //     pactData[pactid].employeeSignDate = signingDate_;
+
+    //     if (pactData_.pactState == PactState.EMPLOYER_SIGNED) {
+    //         pactData[pactid].pactState = PactState.ALL_SIGNED;
+    //     } else {
+    //         pactData[pactid].pactState = PactState.EMPLOYEE_SIGNED;
+    //     }
+    //     return true;
+    // }
+
 
     // Function to send digital signature as the employee
     function employeeSign(
+        bytes32 pactid,
         bytes calldata signature,
         uint256 signingDate_
     ) external returns (bool) {
-        PactState pactState_ = pactState;
-        PactData memory pactData_ = pactData;
-        require(pactState_ < PactState.ALL_SIGNED, "Already signed");
+        PactData memory pactData_ = pactData[pactid];
+        PactState pactState_ = pactData_.pactState;
+        require(pactData_.pactState < PactState.ALL_SIGNED, "Already signed");
         require(
-            recoverContractSigner(signature, signingDate_) ==
+            recoverContractSigner(pactid, signature, signingDate_) ==
                 pactData_.employee,
             "Employee Sign Invalid"
         );
-        employeeSignDate = signingDate_;
 
         if (pactState_ == PactState.EMPLOYER_SIGNED) {
-            pactState = PactState.ALL_SIGNED;
+            pactState_ = PactState.ALL_SIGNED;
         } else {
-            pactState = PactState.EMPLOYEE_SIGNED;
+            pactState_ = PactState.EMPLOYEE_SIGNED;
         }
+        pactData[pactid].employeeSignDate = uint40(signingDate_);
+        pactData[pactid].pactState = pactState_;
         return true;
     }
 
-    function delegate(        bytes32 pactid,
-address[] calldata delegates, bool addOrRevoke) external {
-        require(pactState >= PactState.ALL_SIGNED);
-        if (msg.sender == pactData.employer) {
+    function delegate(
+        bytes32 pactid,
+        address[] calldata delegates, 
+        bool addOrRevoke) external {
+        require(pactData[pactid].pactState >= PactState.ALL_SIGNED);
+        if (msg.sender == pactData[pactid].employer) {
             for (uint i = 0; i < delegates.length; i++) {
-                isEmployerDelegate[delegates[i]] = addOrRevoke;
+                isEmployerDelegate[pactid][delegates[i]] = addOrRevoke;
             }
         }
-        if (msg.sender == pactData.employee) {
+        else if (msg.sender == pactData[pactid].employee) {
             for (uint i = 0; i < delegates.length; i++) {
-                isEmployeeDelegate[delegates[i]] = addOrRevoke;
+                isEmployeeDelegate[pactid][delegates[i]] = addOrRevoke;
             }
         }
-    }
-
-    function start(        bytes32 pactid,
-) external onlyEmployer {
-        require(pactState == PactState.ALL_SIGNED);
-        pactState = PactState.ACTIVE;
-        lastPaymentMade = Payment({
-            amount: uint128(0),
-            timeStamp: uint120(block.timestamp)
-        });
-        emit LogStateUpdate(PactState.ACTIVE, msg.sender);
-    }
-
-    function pause(        bytes32 pactid,
-) external onlyParties isActive {
-        pactState = PactState.PAUSED;
-        pauseResumeTime = block.timestamp;
-        emit LogStateUpdate(PactState.PAUSED, msg.sender);
-    }
-
-    function resume(        bytes32 pactid,
-) external onlyParties {
-        require(pactState == PactState.PAUSED);
-        pactState = PactState.ACTIVE;
-        pauseDuration += block.timestamp - pauseResumeTime;
-        pauseResumeTime = block.timestamp;
-        emit LogStateUpdate(PactState.ACTIVE, msg.sender);
-    }
-
-    function approvePayment(        bytes32 pactid,
-) external payable onlyEmployer isActive {
-        require(msg.value >= pactData.payAmount, "Amount less than payAmount");
-        lastPaymentMade = Payment({
-            timeStamp: uint120(block.timestamp),
-            amount: uint128(msg.value)
-        });
-        availableToWithdraw += msg.value;
-        pauseDuration = 0;
-        emit LogPaymentMade(msg.value, msg.sender);
-    }
-
-    function withdrawPayment(        bytes32 pactid,
-uint value) external onlyEmployee isActive {
-        require(
-            availableToWithdraw >= value && availableToWithdraw > 0,
-            "Payment not available"
-        );
-        uint withdrawAmt = value;
-        if (withdrawAmt == 0) {
-            withdrawAmt = availableToWithdraw;
+        else {
+            revert();
         }
-        availableToWithdraw -= withdrawAmt;
-        emit LogPaymentWithdrawn(withdrawAmt, msg.sender);
-        payable(pactData.employee).transfer(withdrawAmt);
     }
 
-    function resign() external onlyEmployee isActive {
-        pactState = PactState.RESIGNED;
-        emit LogStateUpdate(PactState.RESIGNED, msg.sender);
+    function start(bytes32 pactid) external onlyEmployer(pactid) {
+        require(pactData[pactid].pactState == PactState.ALL_SIGNED);
+        pactData[pactid].pactState = PactState.ACTIVE;
+        payData[pactid].lastPayTimeStamp = uint40(block.timestamp);
+        payData[pactid].lastPayAmount = 0;
+        emit LogStateUpdate(pactid,PactState.ACTIVE, msg.sender);
     }
 
-    function approveResign() external onlyEmployer {
-        require(pactState == PactState.RESIGNED, "Not Resigned");
-        pactState = PactState.END_ACCEPTED;
-        emit LogStateUpdate(PactState.END_ACCEPTED, msg.sender);
-    }
+    // function pause(bytes32 pactid) external onlyParties(pactid) isActive(pactid) {
+    //     pactData[pactid].pactState = PactState.PAUSED;
+    //     pactData[pactid].pauseResumeTime = uint40(block.timestamp);
+    //     emit LogStateUpdate(pactid, PactState.PAUSED, msg.sender);
+    // }
 
-    function terminate(        bytes32 pactid,
-) external onlyEmployer isEOA isActive {
-        pactState = PactState.TERMINATED;
-        uint stakeAmount_ = stakeAmount;
+    // function resume(bytes32 pactid) external onlyParties(pactid) {
+    //     require(pactData[pactid].pactState == PactState.PAUSED);
+    //     pactData[pactid].pactState = PactState.ACTIVE;
+    //     pactData[pactid].pauseDuration += uint40(block.timestamp) - pactData[pactid].pauseResumeTime;
+    //     pactData[pactid].pauseResumeTime = uint40(block.timestamp);
+    //     emit LogStateUpdate(pactid, PactState.ACTIVE, msg.sender);
+    // }
 
-        // Payment due assumed
-        uint lockedAmt = (pactData.payAmount *
-            (block.timestamp - lastPaymentMade.timeStamp - pauseDuration)) /
-            (pactData.payScheduleDays * 86400 * 1000);
-        if (lockedAmt >= stakeAmount_) return;
+    // function approvePayment(bytes32 pactid) external payable onlyEmployer(pactid) isActive(pactid) {
+    //     require(msg.value >= pactData[pactid].payAmount, "Amount less than payAmount");
+    //     pactData[pactid].lastPayTimeStamp = uint40(block.timestamp);
+    //     pactData[pactid].lastPayAmount = uint128(msg.value);
+    //     pactData[pactid].availableToWithdraw += uint128(msg.value);
+    //     pactData[pactid].pauseDuration = 0;
+    //     emit LogPaymentMade(pactid, msg.value, msg.sender);
+    // }
 
-        uint refundAmount_ = stakeAmount_ - lockedAmt;
-        stakeAmount = lockedAmt;
+    // function withdrawPayment(bytes32 pactid, uint value) external onlyEmployee(pactid) isActive(pactid) {
+    //     require(
+    //         pactData[pactid].availableToWithdraw >= value && pactData[pactid].availableToWithdraw > 0,
+    //         "Payment not available"
+    //     );
+    //     uint withdrawAmt = value;
+    //     if (withdrawAmt == 0) {
+    //         withdrawAmt = pactData[pactid].availableToWithdraw;
+    //     }
+    //     pactData[pactid].availableToWithdraw -= uint128(withdrawAmt);
+    //     emit LogPaymentWithdrawn(pactid, withdrawAmt, msg.sender);
+    //     payable(pactData[pactid].employee).transfer(withdrawAmt);
+    // }
 
-        if (address(this).balance < refundAmount_) {
-            return;
-        }
-        emit LogStateUpdate(PactState.TERMINATED, msg.sender);
-        payable(msg.sender).transfer(refundAmount_);
-    }
+    // function resign(bytes32 pactid) external onlyEmployee(pactid) isActive(pactid) {
+    //     pactData[pactid].pactState = PactState.RESIGNED;
+    //     emit LogStateUpdate(pactid, PactState.RESIGNED, msg.sender);
+    // }
+
+    // function approveResign(bytes32 pactid) external onlyEmployer(pactid) {
+    //     require(pactData[pactid].pactState == PactState.RESIGNED, "Not Resigned");
+    //     pactData[pactid].pactState = PactState.END_ACCEPTED;
+    //     emit LogStateUpdate(pactid, PactState.END_ACCEPTED, msg.sender);
+    // }
+
+    // function terminate(bytes32 pactid) external onlyEmployer(pactid) isEOA isActive(pactid) {
+    //     PactData memory pactData_ = pactData[pactid];
+    //     pactData[pactid].pactState = PactState.TERMINATED;
+
+    //     // Payment due assumed
+    //     uint paymentDue = (pactData_.payAmount *
+    //         (block.timestamp - pactData_.lastPayTimeStamp - pactData_.pauseDuration)) /
+    //         (pactData[pactid].payScheduleDays * 86400);
+    //     if (paymentDue >= pactData[pactid].stakeAmount) paymentDue = pactData[pactid].stakeAmount;
+
+    //     uint refundAmount_ = pactData_.stakeAmount - paymentDue;
+    //     pactData[pactid].stakeAmount = uint128(paymentDue);
+
+    //     emit LogStateUpdate(pactid, PactState.TERMINATED, msg.sender);
+    //     payable(pactData[pactid].employer).transfer(refundAmount_);
+    // }
 
     /* Full and Final Settlement FnF can be initiated by both parties in case they owe something.*/
-    function fNf(        bytes32 pactid,
-) external payable {
-        PactState oldPactState_ = pactState;
-        PactState pactState_ = oldPactState_;
-        address receiver = address(0);
+    // function fNf(bytes32 pactid) external payable {
+    //     PactState oldPactState_ = pactData[pactid].pactState;
+    //     PactState pactState_ = oldPactState_;
+    //     address receiver = address(0);
 
-        require(
-            pactState_ >= PactState.TERMINATED && pactState_ <= PactState.ENDED,
-            "Check State"
-        );
+    //     require(
+    //         pactState_ >= PactState.TERMINATED && pactState_ <= PactState.ENDED,
+    //         "Wrong State"
+    //     );
 
-        if (isEmployeeDelegate[msg.sender]) {
-            if (
-                pactState_ == PactState.TERMINATED ||
-                pactState_ == PactState.END_ACCEPTED
-            ) {
-                pactState_ = PactState.FNF_EMPLOYEE;
-            } else if (
-                pactState_ == PactState.DISPUTED ||
-                pactState_ == PactState.ARBITRATED
-            ) {
-                pactState_ = PactState.DISPUTE_RESOLVED;
-            } else if (pactState_ == PactState.FNF_EMPLOYER) {
-                pactState_ = PactState.FNF_SETTLED;
-            }
-            if (msg.value > 0) {
-                receiver = pactData.employer;
-            }
-        } else if (isEmployerDelegate[msg.sender]) {
-            if (
-                pactState_ == PactState.TERMINATED ||
-                pactState_ == PactState.END_ACCEPTED
-            ) {
-                pactState_ = PactState.FNF_EMPLOYER;
-            } else if (pactState == PactState.FNF_EMPLOYEE) {
-                pactState_ = PactState.FNF_SETTLED;
-            }
-            if (msg.value > 0) {
-                if (
-                    pactState == PactState.DISPUTED &&
-                    msg.value >= disputeData.proposedAmount
-                ) {
-                    pactState_ = PactState.FNF_SETTLED;
-                }
-                receiver = pactData.employee;
-            }
-        } else {
-            revert("Unauthorized");
-        }
-        if (oldPactState_ != pactState_) {
-            pactState = pactState_;
-            emit LogStateUpdate(pactState_, msg.sender);
-        }
-        if (receiver != address(0)) {
-            emit LogPaymentMade(msg.value, msg.sender);
-            payable(receiver).transfer(msg.value);
-        }
-    }
+    //     if (isEmployeeDelegate[pactid][msg.sender]) {
+    //         if (
+    //             pactState_ == PactState.TERMINATED ||
+    //             pactState_ == PactState.END_ACCEPTED
+    //         ) {
+    //             pactState_ = PactState.FNF_EMPLOYEE;
+    //         } else if (
+    //             pactState_ == PactState.DISPUTED ||
+    //             pactState_ == PactState.ARBITRATED
+    //         ) {
+    //             pactState_ = PactState.DISPUTE_RESOLVED;
+    //         } else if (pactState_ == PactState.FNF_EMPLOYER) {
+    //             pactState_ = PactState.FNF_SETTLED;
+    //         }
+    //         if (msg.value > 0) {
+    //             receiver = pactData[pactid].employer;
+    //         }
+    //     } else if (isEmployerDelegate[pactid][msg.sender]) {
+    //         if (
+    //             pactState_ == PactState.TERMINATED ||
+    //             pactState_ == PactState.END_ACCEPTED
+    //         ) {
+    //             pactState_ = PactState.FNF_EMPLOYER;
+    //         } else if (pactState_ == PactState.FNF_EMPLOYEE) {
+    //             pactState_ = PactState.FNF_SETTLED;
+    //         }
+    //         if (msg.value > 0) {
+    //             if (
+    //                 pactState_ == PactState.DISPUTED &&
+    //                 msg.value >= pactData[pactid].proposedAmount
+    //             ) {
+    //                 pactState_ = PactState.FNF_SETTLED;
+    //             }
+    //             receiver = pactData[pactid].employee;
+    //         }
+    //     } else {
+    //         revert("Unauthorized");
+    //     }
+    //     if (oldPactState_ != pactState_) {
+    //         pactData[pactid].pactState = pactState_;
+    //         emit LogStateUpdate(pactid, pactState_, msg.sender);
+    //     }
+    //     if (receiver != address(0)) {
+    //         emit LogPaymentMade(pactid, msg.value, msg.sender);
+    //         payable(receiver).transfer(msg.value);
+    //     }
+    // }
 
-    function dispute(        bytes32 pactid,
-uint suggestedAmountClaim) external onlyEmployee {
-        require(pactState == PactState.FNF_EMPLOYER);
-        pactState = PactState.DISPUTED;
-        disputeData.proposedAmount = uint128(suggestedAmountClaim);
-        emit LogStateUpdate(PactState.DISPUTED, msg.sender);
-    }
+    // function dispute(
+    //     bytes32 pactid, 
+    //     uint suggestedAmountClaim) external onlyEmployee(pactid) {
+    //     require(pactData[pactid].pactState == PactState.FNF_EMPLOYER);
+    //     pactData[pactid].pactState = PactState.DISPUTED;
+    //     pactData[pactid].proposedAmount = uint128(suggestedAmountClaim);
+    //     emit LogStateUpdate(pactid, PactState.DISPUTED, msg.sender);
+    // }
 
-    function proposeArbitrators(        bytes32 pactid,
+    // function proposeArbitrators(
+    //     bytes32 pactid, 
+    //     address[] calldata proposedArbitrators_
+    // ) external onlyParties(pactid) {
+    //     PactData storage pactData_ = pactData[pactid];
+    //     require(!(pactData_.arbitratorAccepted), "Already Accepted");
+    //     require(proposedArbitrators_.length > 0);
+    //     require(pactData_.pactState == PactState.DISPUTED, "Not Disputed");
+    //     pactData[pactid].arbitratorProposer = msg.sender;
+    //     pactData[pactid].arbitratorProposed = true;
+    //     delete pactData[pactid].proposedArbitrators;
+    //     for (uint i = 0; i < proposedArbitrators_.length; i++) {
+    //         pactData[pactid].proposedArbitrators.push(
+    //             Arbitrator({addr: proposedArbitrators_[i], hasResolved: false})
+    //         );
+    //     }
+    // }
 
-        address[] calldata proposedArbitrators_
-    ) external onlyParties {
-        require(!(disputeData.arbitratorAccepted), "Already Accepted");
-        require(proposedArbitrators_.length > 0);
-        require(pactState == PactState.DISPUTED, "Not Disputed");
-        disputeData.arbitratorProposer = msg.sender;
-        disputeData.arbitratorProposed = true;
-        delete disputeData.proposedArbitrators;
-        for (uint i = 0; i < proposedArbitrators_.length; i++) {
-            disputeData.proposedArbitrators.push(
-                Arbitrator({addr: proposedArbitrators_[i], hasResolved: false})
-            );
-        }
-    }
+    // function acceptOrRejectArbitrators(
+    //     bytes32 pactid, 
+    //     bool acceptOrReject) external onlyParties(pactid) {
+    //     require(
+    //         pactData[pactid].pactState == PactState.DISPUTED && pactData[pactid].arbitratorProposed
+    //     );
 
-    function acceptOrRejectArbitrators(        bytes32 pactid,
+    //     if (isEmployeeDelegate[pactid][pactData[pactid].arbitratorProposer]) {
+    //         require(isEmployerDelegate[pactid][msg.sender]);
+    //     } else {
+    //         require(isEmployeeDelegate[pactid][msg.sender]);
+    //     }
+    //     pactData[pactid].arbitratorAccepted = acceptOrReject;
+    //     if (!acceptOrReject) {
+    //         pactData[pactid].arbitratorProposed = false;
+    //         delete pactData[pactid].proposedArbitrators;
+    //     } else {
+    //         pactData[pactid].pactState = PactState.ARBITRATED;
+    //         emit LogStateUpdate(pactid, PactState.ARBITRATED, msg.sender);
+    //     }
+    // }
 
-        bool acceptOrReject
-    ) external onlyParties {
-        require(
-            pactState == PactState.DISPUTED && disputeData.arbitratorProposed
-        );
+    // function getArbitratorsList(bytes32 pactid)
+    //     external
+    //     view
+    //     returns (Arbitrator[] memory arbitrators)
+    // {
+    //     return pactData[pactid].proposedArbitrators;
+    // }
 
-        if (isEmployeeDelegate[disputeData.arbitratorProposer]) {
-            require(isEmployerDelegate[msg.sender]);
-        } else {
-            require(isEmployeeDelegate[msg.sender]);
-        }
-        disputeData.arbitratorAccepted = acceptOrReject;
-        if (!acceptOrReject) {
-            disputeData.arbitratorProposed = false;
-            delete disputeData.proposedArbitrators;
-        } else {
-            pactState = PactState.ARBITRATED;
-            emit LogStateUpdate(PactState.ARBITRATED, msg.sender);
-        }
-    }
-
-    function getArbitratorsList(        bytes32 pactid,
-)
-        external
-        view
-        returns (Arbitrator[] memory arbitrators)
-    {
-        return disputeData.proposedArbitrators;
-    }
-
-    function arbitratorResolve(        bytes32 pactid,
-) public {
-        require(pactState == PactState.ARBITRATED, "Not arbitrated");
-        require(disputeData.arbitratorAccepted, "Arbitrator not accepted");
-        bool allResolved = true;
-        Arbitrator[] memory proposedArbitrators_ = disputeData
-            .proposedArbitrators;
-        for (uint i = 0; i < proposedArbitrators_.length; i++) {
-            if (msg.sender == proposedArbitrators_[i].addr) {
-                disputeData.proposedArbitrators[i].hasResolved = true;
-                proposedArbitrators_[i].hasResolved = true;
-            }
-            allResolved = allResolved && proposedArbitrators_[i].hasResolved;
-        }
-        if (allResolved) {
-            pactState = PactState.DISPUTE_RESOLVED;
-            emit LogStateUpdate(PactState.DISPUTE_RESOLVED, msg.sender);
-        }
-    }
+    // function arbitratorResolve(bytes32 pactid) public {
+    //     require(pactData[pactid].pactState == PactState.ARBITRATED, "Not arbitrated");
+    //     require(pactData[pactid].arbitratorAccepted, "Arbitrator not accepted");
+    //     bool allResolved = true;
+    //     Arbitrator[] memory proposedArbitrators_ = pactData[pactid]
+    //         .proposedArbitrators;
+    //     for (uint i = 0; i < proposedArbitrators_.length; i++) {
+    //         if (msg.sender == proposedArbitrators_[i].addr) {
+    //             pactData[pactid].proposedArbitrators[i].hasResolved = true;
+    //             proposedArbitrators_[i].hasResolved = true;
+    //         }
+    //         allResolved = allResolved && proposedArbitrators_[i].hasResolved;
+    //     }
+    //     if (allResolved) {
+    //         pactData[pactid].pactState = PactState.DISPUTE_RESOLVED;
+    //         emit LogStateUpdate(pactid, PactState.DISPUTE_RESOLVED, msg.sender);
+    //     }
+    // }
 
     /** To get the remaining stake by the employer when the contract has been ended. */
-    function reclaimStake(        bytes32 pactid,
-address payable payee) external onlyEmployer isEOA {
-        require(pactState >= PactState.FNF_SETTLED);
-        uint stakeAmount_ = stakeAmount;
-        require(stakeAmount_ <= address(this).balance, "Low Balance");
+/*     function reclaimStake(
+        bytes32 pactid,
+        address payable payee) external onlyEmployer(pactid) isEOA {
+        require(pactData[pactid].pactState >= PactState.FNF_SETTLED);
         require(payee != address(0));
-        pactState = PactState.ENDED;
-        emit LogPaymentMade(stakeAmount_, address(this));
-        emit LogStateUpdate(PactState.ENDED, msg.sender);
-        stakeAmount = 0;
+        uint stakeAmount_ = pactData[pactid].stakeAmount;
+        require(stakeAmount_ > 0);
+        pactData[pactid].pactState = PactState.ENDED;
+        emit LogPaymentMade(pactid, stakeAmount_, address(this));
+        emit LogStateUpdate(pactid, PactState.ENDED, msg.sender);
+        pactData[pactid].stakeAmount = 0;
         payee.transfer(stakeAmount_);
-    }
+    } */
 
-    function autoWithdraw(        bytes32 pactid,
-) external onlyEmployee {
-        require(pactState >= PactState.ACTIVE);
-        require(
-            block.timestamp - lastPaymentMade.timeStamp >
-                2 * pactData.payScheduleDays * 86400000,
-            "Wait"
-        );
-        uint stakeAmount_ = stakeAmount;
-        stakeAmount = 0;
-        lastPaymentMade = Payment({
-            amount: uint128(stakeAmount_),
-            timeStamp: uint120(block.timestamp)
-        });
-        pactState = PactState.PAUSED;
-        emit LogStateUpdate(PactState.PAUSED, msg.sender);
-        emit LogPaymentMade(stakeAmount_, address(this));
-        payable(pactData.employee).transfer(stakeAmount_);
-    }
+    // function autoWithdraw(bytes32 pactid) external onlyEmployee(pactid) {
+    //     require(pactData[pactid].pactState >= PactState.ACTIVE);
+    //     require(
+    //         block.timestamp - pactData[pactid].lastPayTimeStamp >
+    //             2 * pactData[pactid].payScheduleDays * 86400,
+    //         "Wait"
+    //     );
+    //     uint stakeAmount_ = pactData[pactid].stakeAmount;
+    //     pactData[pactid].stakeAmount = 0;
+    //     pactData[pactid].lastPayAmount = uint128(stakeAmount_);        
+    //     pactData[pactid].lastPayTimeStamp = uint40(block.timestamp);
+    //     pactData[pactid].pactState = PactState.PAUSED;
+    //     emit LogStateUpdate(pactid, PactState.PAUSED, msg.sender);
+    //     emit LogPaymentMade(pactid, stakeAmount_, address(this));
+    //     payable(pactData[pactid].employee).transfer(stakeAmount_);
+    // }
 
-    function contractDataHash(        bytes32 pactid,
-
-        uint256 signingDate_
-    ) public view returns (bytes32) {
+    function contractDataHash(
+        bytes32 pactid,
+        uint256 signingDate_) public view returns (bytes32) {
+            PactData memory pactData_ = pactData[pactid];
         return
             keccak256(
                 abi.encodePacked(
-                    "ChainPact - I hereby sign the following ",
+                    "ChainPact - Simple Gig pact - I hereby agree with the following ",
                     "For this pact named ",
-                    pactData.pactName,
+                    pactData_.pactName,
+                    "Pact ID",
+                    pactid,
                     "Employee ",
-                    pactData.employee,
+                    pactData_.employee,
                     "Employer ",
-                    pactData.employer,
+                    pactData_.employer,
                     "Pay Schedule in days ",
-                    pactData.payScheduleDays,
+                    pactData_.payScheduleDays,
                     "payAmount in native ",
-                    pactData.payAmount,
+                    pactData_.payAmount,
                     "Signing DateTime ",
                     signingDate_,
                     "Address of this contract ",
@@ -510,14 +530,13 @@ address payable payee) external onlyEmployer isEOA {
             );
     }
 
-    function recoverContractSigner(        bytes32 pactid,
-
+    function recoverContractSigner(bytes32 pactid,
         bytes memory signature,
         uint256 signingDate_
     ) public view returns (address) {
         return
             ECDSA.recover(
-                ECDSA.toEthSignedMessageHash(contractDataHash(signingDate_)),
+                ECDSA.toEthSignedMessageHash(contractDataHash(pactid, signingDate_)),
                 signature
             );
     }
