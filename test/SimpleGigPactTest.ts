@@ -307,8 +307,8 @@
 //         await expect(pact.destroy()).to.be.reverted
 
 //         let signingDate = new Date().getTime()
-//         let signature = await employer.signMessage(ethers.utils.arrayify(await pact.contractDataHash(signingDate)))
 //         let stake = (await pact.pactData()).payAmount
+//         let signature = await employer.signMessage(ethers.utils.arrayify(await pact.contractDataHash(signingDate)))
 //         await expect(pact.employerSign(signature, signingDate, { value: stake })).to.be.reverted
 
 //       })
