@@ -26,3 +26,8 @@ struct Dispute {
     bool    arbitratorAccepted;
     Arbitrator[] proposedArbitrators;
 }
+
+
+
+
+
