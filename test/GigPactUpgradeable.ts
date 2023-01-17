@@ -2,32 +2,33 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { GigPactUpgradeable, GigPactUpgradeable__factory, PactSignature, PactSignature__factory } from "../typechain-types";
+import { GigPactUpgradeable, GigPactUpgradeable__factory, PactSignature, PactSignature__factory, DisputeHelper__factory } from "../typechain-types";
+import { DisputeHelper } from "../typechain-types/contracts/GigPactUpgradeable/libraries/DisputeHelper";
 
 const Signer = ethers.Signer
 const BigNumber = ethers.BigNumber
 const formatBytes32String = ethers.utils.formatBytes32String
 let pact: GigPactUpgradeable
 let pactSigLib: PactSignature
+let disputeHelperLib: DisputeHelper
 
 enum PactState {
-    DEPLOYED,
-    RETRACTED,
-    EMPLOYER_SIGNED,
-    EMPLOYEE_SIGNED,
-    ALL_SIGNED,
-    ACTIVE,
-    PAUSED,
-    TERMINATED,
-    RESIGNED,
-    END_ACCEPTED,
-    FNF_EMPLOYER,
-    FNF_EMPLOYEE,
-    DISPUTED,
-    ARBITRATED,
-    FNF_SETTLED,
-    DISPUTE_RESOLVED,
-    ENDED
+  DEPLOYED,
+  RETRACTED,
+  EMPLOYER_SIGNED,
+  EMPLOYEE_SIGNED,
+  ALL_SIGNED,
+  ACTIVE,
+  PAUSED,
+  TERMINATED,
+  RESIGNED,
+  FNF_EMPLOYER,
+  FNF_EMPLOYEE,
+  DISPUTED,
+  ARBITRATED,
+  FNF_SETTLED,
+  DISPUTE_RESOLVED,
+  ENDED
 }
 
 
@@ -76,8 +77,8 @@ async function createAndSignRandomPact() {
 
 async function deployToDisputePact(suggestedAmt: BigNumberish) {
   let {resultingEvent} = await createAndSignRandomPact()
-  await pact.delegate(resultingEvent.pactid, [employerDelegate.address], true)
-  await pact.connect(employee).delegate(resultingEvent.pactid, [employeeDelegate.address], true)
+  await pact.delegatePact(resultingEvent.pactid, [employerDelegate.address], true)
+  await pact.connect(employee).delegatePact(resultingEvent.pactid, [employeeDelegate.address], true)
   await pact.connect(employerDelegate).startPause(resultingEvent.pactid, true)
   await pact.connect(employerDelegate).terminate(resultingEvent.pactid)
   await pact.connect(employerDelegate).fNf(resultingEvent.pactid, { value: suggestedAmt })
@@ -94,9 +95,13 @@ describe("Gig Pact Test", function () {
     let pactSigFactory: PactSignature__factory = await ethers.getContractFactory("PactSignature")
     pactSigLib = await pactSigFactory.deploy()
     pactSigLib = await pactSigLib.deployed()
+    let disputeHelperFactory: DisputeHelper__factory = await ethers.getContractFactory("DisputeHelper")
+    disputeHelperLib = await disputeHelperFactory.deploy()
+    disputeHelperLib = await disputeHelperLib.deployed()
     let pactFactory: GigPactUpgradeable__factory = await ethers.getContractFactory("GigPactUpgradeable", {
       libraries: {
-        PactSignature: pactSigLib.address
+        PactSignature: pactSigLib.address,
+        DisputeHelper: disputeHelperLib.address,
       }
     }
     )
@@ -235,7 +240,7 @@ describe("Gig Pact Test", function () {
       it("should allow starting a pact", async function () {
         let { resultingEvent } = await createAndSignRandomPact()
         await expect(pact.connect(employee).startPause(resultingEvent.pactid, true)).to.be.revertedWith("employer delegate only")
-        await pact.delegate(resultingEvent.pactid, [thirdParty.address], true)
+        await pact.delegatePact(resultingEvent.pactid, [thirdParty.address], true)
         await pact.connect(thirdParty).startPause(resultingEvent.pactid, true)
       })
 
@@ -293,7 +298,7 @@ describe("Gig Pact Test", function () {
 
       it("should not allow delegating before core parties have signed", async function () {
         let { resultingEvent } = await createNewPact()
-        await expect(pact.delegate(resultingEvent.pactid, [thirdParty.address], true)).to.be.revertedWithoutReason()
+        await expect(pact.delegatePact(resultingEvent.pactid, [thirdParty.address], true)).to.be.revertedWithoutReason()
       })
       it("should allow terminating active pact", async function () {
         let { resultingEvent } = await createAndSignRandomPact()
@@ -369,8 +374,8 @@ describe("Gig Pact Test", function () {
     describe("Dispute", function () {
       it("should allow employee to raise a dispute on terminate and fNf", async function () {
         let {resultingEvent} = await createAndSignRandomPact()
-        await pact.delegate(resultingEvent.pactid, [employerDelegate.address], true)
-        await pact.connect(employee).delegate(resultingEvent.pactid, [employeeDelegate.address], true)
+        await pact.delegatePact(resultingEvent.pactid, [employerDelegate.address], true)
+        await pact.connect(employee).delegatePact(resultingEvent.pactid, [employeeDelegate.address], true)
         await pact.connect(employerDelegate).startPause(resultingEvent.pactid, true)
 
         await pact.connect(employerDelegate).terminate(resultingEvent.pactid)
@@ -383,8 +388,8 @@ describe("Gig Pact Test", function () {
         expect((await pact.getAllPactData(resultingEvent.pactid))[0].pactState).to.eq(PactState.TERMINATED)
 
         resultingEvent = (await createAndSignRandomPact()).resultingEvent
-        await pact.delegate(resultingEvent.pactid, [employerDelegate.address], true)
-        await pact.connect(employee).delegate(resultingEvent.pactid, [employeeDelegate.address], true)
+        await pact.delegatePact(resultingEvent.pactid, [employerDelegate.address], true)
+        await pact.connect(employee).delegatePact(resultingEvent.pactid, [employeeDelegate.address], true)
         await pact.connect(employerDelegate).startPause(resultingEvent.pactid, true)
         await pact.connect(employerDelegate).terminate(resultingEvent.pactid)
         await pact.connect(employerDelegate).fNf(resultingEvent.pactid, { value: suggestedAmt })
