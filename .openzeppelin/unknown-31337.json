@@ -7,11 +7,6 @@
       "kind": "uups"
     },
     {
-      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
-      "txHash": "0x63f498e5ab777a367172ba6fa8fccd66c6cbd12589979ac35f0ae4a973a44391",
-      "kind": "uups"
-    },
-    {
       "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
       "txHash": "0x4d97066c26cbc2591cc19f868fc3ef27f82797aefc0bf1c38aa909451a80c07e",
       "kind": "uups"
@@ -20,403 +15,27 @@
       "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
       "txHash": "0x766504b89f42bd25a6d100daa10c9eeb0600cadfaa5c876f6008462d2518db5b",
       "kind": "uups"
+    },
+    {
+      "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "txHash": "0x08f62d5b4792e44b47dc5738f6ad47337d04e14b03d584c552dea512c1bdc7e3",
+      "kind": "uups"
+    },
+    {
+      "address": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      "txHash": "0x9a8d3afcfbf2e4e0548ef502ed6e3d98abdec4e037f83b910c0a7e0b7e1071be",
+      "kind": "uups"
+    },
+    {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "txHash": "0xe8b5beabad0148aead5d8a90e88e5386030b0d5ee50a73c28279e520698db5e8",
+      "kind": "uups"
     }
   ],
   "impls": {
     "0766c92e8c6f830bcc7d10c98e498fe6c2413e36ed0bd572c0260c2c474ecc7d": {
       "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
       "txHash": "0xc56bfdce22142209d2cc2cd89fb942e27a827c70b9d7b37c965c05e83c1d9b90",
-      "layout": {
-        "solcVersion": "0.8.16",
-        "storage": [
-          {
-            "label": "_initialized",
-            "offset": 0,
-            "slot": "0",
-            "type": "t_uint8",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
-            "retypedFrom": "bool"
-          },
-          {
-            "label": "_initializing",
-            "offset": 1,
-            "slot": "0",
-            "type": "t_bool",
-            "contract": "Initializable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "1",
-            "type": "t_array(t_uint256)50_storage",
-            "contract": "ERC1967UpgradeUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "51",
-            "type": "t_array(t_uint256)50_storage",
-            "contract": "UUPSUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "101",
-            "type": "t_array(t_uint256)50_storage",
-            "contract": "ContextUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
-          },
-          {
-            "label": "_owner",
-            "offset": 0,
-            "slot": "151",
-            "type": "t_address",
-            "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
-          },
-          {
-            "label": "__gap",
-            "offset": 0,
-            "slot": "152",
-            "type": "t_array(t_uint256)49_storage",
-            "contract": "OwnableUpgradeable",
-            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
-          },
-          {
-            "label": "pactsCounter",
-            "offset": 0,
-            "slot": "201",
-            "type": "t_uint64",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:50"
-          },
-          {
-            "label": "listsCounter",
-            "offset": 8,
-            "slot": "201",
-            "type": "t_uint64",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:51"
-          },
-          {
-            "label": "donationAccount",
-            "offset": 0,
-            "slot": "202",
-            "type": "t_address_payable",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:52"
-          },
-          {
-            "label": "maxMaturityTime",
-            "offset": 0,
-            "slot": "203",
-            "type": "t_uint256",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:53"
-          },
-          {
-            "label": "maxVotingPeriod",
-            "offset": 0,
-            "slot": "204",
-            "type": "t_uint256",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:54"
-          },
-          {
-            "label": "donationMaxAmount",
-            "offset": 0,
-            "slot": "205",
-            "type": "t_uint256",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:55"
-          },
-          {
-            "label": "pacts",
-            "offset": 0,
-            "slot": "206",
-            "type": "t_mapping(t_bytes32,t_struct(PactData)1196_storage)",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:56"
-          },
-          {
-            "label": "contributions",
-            "offset": 0,
-            "slot": "207",
-            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_uint256))",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:58"
-          },
-          {
-            "label": "canWithdrawContribution",
-            "offset": 0,
-            "slot": "208",
-            "type": "t_mapping(t_bytes32,t_bool)",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:59"
-          },
-          {
-            "label": "canVote",
-            "offset": 0,
-            "slot": "209",
-            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:60"
-          },
-          {
-            "label": "hasVoted",
-            "offset": 0,
-            "slot": "210",
-            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:61"
-          },
-          {
-            "label": "minVotingContribution",
-            "offset": 0,
-            "slot": "211",
-            "type": "t_mapping(t_bytes32,t_uint256)",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:62"
-          },
-          {
-            "label": "votingActive",
-            "offset": 0,
-            "slot": "212",
-            "type": "t_mapping(t_bytes32,t_bool)",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:63"
-          },
-          {
-            "label": "membershipLists",
-            "offset": 0,
-            "slot": "213",
-            "type": "t_mapping(t_string_memory_ptr,t_array(t_address)dyn_storage)",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:66"
-          },
-          {
-            "label": "listAdmin",
-            "offset": 0,
-            "slot": "214",
-            "type": "t_mapping(t_string_memory_ptr,t_mapping(t_address,t_bool))",
-            "contract": "WordPactUpgradeable",
-            "src": "contracts/WordPactUpgradeable.sol:67"
-          }
-        ],
-        "types": {
-          "t_address": {
-            "label": "address",
-            "numberOfBytes": "20"
-          },
-          "t_address_payable": {
-            "label": "address payable",
-            "numberOfBytes": "20"
-          },
-          "t_array(t_address)dyn_storage": {
-            "label": "address[]",
-            "numberOfBytes": "32"
-          },
-          "t_array(t_struct(Participant)1169_storage)dyn_storage": {
-            "label": "struct Participant[]",
-            "numberOfBytes": "32"
-          },
-          "t_array(t_uint256)49_storage": {
-            "label": "uint256[49]",
-            "numberOfBytes": "1568"
-          },
-          "t_array(t_uint256)50_storage": {
-            "label": "uint256[50]",
-            "numberOfBytes": "1600"
-          },
-          "t_bool": {
-            "label": "bool",
-            "numberOfBytes": "1"
-          },
-          "t_bytes32": {
-            "label": "bytes32",
-            "numberOfBytes": "32"
-          },
-          "t_enum(BeneficiaryType)1161": {
-            "label": "enum BeneficiaryType",
-            "members": [
-              "NONE",
-              "YES",
-              "NO"
-            ],
-            "numberOfBytes": "1"
-          },
-          "t_mapping(t_address,t_bool)": {
-            "label": "mapping(address => bool)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_address,t_uint256)": {
-            "label": "mapping(address => uint256)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_bytes32,t_bool)": {
-            "label": "mapping(bytes32 => bool)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_bytes32,t_mapping(t_address,t_bool))": {
-            "label": "mapping(bytes32 => mapping(address => bool))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_bytes32,t_mapping(t_address,t_uint256))": {
-            "label": "mapping(bytes32 => mapping(address => uint256))",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_bytes32,t_struct(PactData)1196_storage)": {
-            "label": "mapping(bytes32 => struct PactData)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_bytes32,t_uint256)": {
-            "label": "mapping(bytes32 => uint256)",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_string_memory_ptr,t_array(t_address)dyn_storage)": {
-            "label": "mapping(string => address[])",
-            "numberOfBytes": "32"
-          },
-          "t_mapping(t_string_memory_ptr,t_mapping(t_address,t_bool))": {
-            "label": "mapping(string => mapping(address => bool))",
-            "numberOfBytes": "32"
-          },
-          "t_string_memory_ptr": {
-            "label": "string",
-            "numberOfBytes": "32"
-          },
-          "t_string_storage": {
-            "label": "string",
-            "numberOfBytes": "32"
-          },
-          "t_struct(PactData)1196_storage": {
-            "label": "struct PactData",
-            "members": [
-              {
-                "label": "created",
-                "type": "t_bool",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "isEditable",
-                "type": "t_bool",
-                "offset": 1,
-                "slot": "0"
-              },
-              {
-                "label": "refundOnVotedNo",
-                "type": "t_bool",
-                "offset": 2,
-                "slot": "0"
-              },
-              {
-                "label": "yesVotes",
-                "type": "t_uint32",
-                "offset": 3,
-                "slot": "0"
-              },
-              {
-                "label": "noVotes",
-                "type": "t_uint32",
-                "offset": 7,
-                "slot": "0"
-              },
-              {
-                "label": "timeLockEndTimestamp",
-                "type": "t_uint64",
-                "offset": 11,
-                "slot": "0"
-              },
-              {
-                "label": "votingEndTimestamp",
-                "type": "t_uint64",
-                "offset": 19,
-                "slot": "0"
-              },
-              {
-                "label": "creator",
-                "type": "t_address",
-                "offset": 0,
-                "slot": "1"
-              },
-              {
-                "label": "totalValue",
-                "type": "t_uint256",
-                "offset": 0,
-                "slot": "2"
-              },
-              {
-                "label": "pactText",
-                "type": "t_string_storage",
-                "offset": 0,
-                "slot": "3"
-              },
-              {
-                "label": "participants",
-                "type": "t_array(t_struct(Participant)1169_storage)dyn_storage",
-                "offset": 0,
-                "slot": "4"
-              },
-              {
-                "label": "memberList",
-                "type": "t_bytes32",
-                "offset": 0,
-                "slot": "5"
-              }
-            ],
-            "numberOfBytes": "192"
-          },
-          "t_struct(Participant)1169_storage": {
-            "label": "struct Participant",
-            "members": [
-              {
-                "label": "addr",
-                "type": "t_address",
-                "offset": 0,
-                "slot": "0"
-              },
-              {
-                "label": "canVote",
-                "type": "t_bool",
-                "offset": 20,
-                "slot": "0"
-              },
-              {
-                "label": "beneficiaryType",
-                "type": "t_enum(BeneficiaryType)1161",
-                "offset": 21,
-                "slot": "0"
-              }
-            ],
-            "numberOfBytes": "32"
-          },
-          "t_uint256": {
-            "label": "uint256",
-            "numberOfBytes": "32"
-          },
-          "t_uint32": {
-            "label": "uint32",
-            "numberOfBytes": "4"
-          },
-          "t_uint64": {
-            "label": "uint64",
-            "numberOfBytes": "8"
-          },
-          "t_uint8": {
-            "label": "uint8",
-            "numberOfBytes": "1"
-          }
-        }
-      }
-    },
-    "0506cdad879369243de81d4a98e5557c1c487229bca6477d6963703ff97cb9ad": {
-      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-      "txHash": "0xa08eb3d3543b689f59cf50ae1bad4b02316a28a8e2cda4e547c5b958faaa54ea",
       "layout": {
         "solcVersion": "0.8.16",
         "storage": [
@@ -1151,6 +770,1294 @@
               }
             ],
             "numberOfBytes": "32"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "6578b4035ffb67700a59e907184203591e8111c5d75dfb00320aa8b0e360a596": {
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "txHash": "0xc08e1d0430f6408fac7b03a68d05eb2f4cc562ddc0a8356952f093916b880598",
+      "layout": {
+        "solcVersion": "0.8.16",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "pactsCounter",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_uint256",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:33"
+          },
+          {
+            "label": "pactData",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_mapping(t_bytes32,t_struct(PactData)3024_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:34"
+          },
+          {
+            "label": "payData",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_bytes32,t_struct(PayData)3035_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:35"
+          },
+          {
+            "label": "isEmployeeDelegate",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:36"
+          },
+          {
+            "label": "isEmployerDelegate",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:37"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(Arbitrator)3040_storage)dyn_storage": {
+            "label": "struct Arbitrator[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_enum(PactState)2996": {
+            "label": "enum PactState",
+            "members": [
+              "DEPLOYED",
+              "RETRACTED",
+              "EMPLOYER_SIGNED",
+              "EMPLOYEE_SIGNED",
+              "ALL_SIGNED",
+              "ACTIVE",
+              "PAUSED",
+              "TERMINATED",
+              "RESIGNED",
+              "FNF_EMPLOYER",
+              "FNF_EMPLOYEE",
+              "DISPUTED",
+              "ARBITRATED",
+              "FNF_SETTLED",
+              "DISPUTE_RESOLVED",
+              "ENDED"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_mapping(t_address,t_bool))": {
+            "label": "mapping(bytes32 => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PactData)3024_storage)": {
+            "label": "mapping(bytes32 => struct PactData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PayData)3035_storage)": {
+            "label": "mapping(bytes32 => struct PayData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Arbitrator)3040_storage": {
+            "label": "struct Arbitrator",
+            "members": [
+              {
+                "label": "addr",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "hasResolved",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PactData)3024_storage": {
+            "label": "struct PactData",
+            "members": [
+              {
+                "label": "pactName",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "employee",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "employeeSignDate",
+                "type": "t_uint40",
+                "offset": 20,
+                "slot": "1"
+              },
+              {
+                "label": "pactState",
+                "type": "t_enum(PactState)2996",
+                "offset": 25,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorAccepted",
+                "type": "t_bool",
+                "offset": 26,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorProposed",
+                "type": "t_bool",
+                "offset": 27,
+                "slot": "1"
+              },
+              {
+                "label": "payScheduleDays",
+                "type": "t_uint32",
+                "offset": 28,
+                "slot": "1"
+              },
+              {
+                "label": "employer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "payAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "stakeAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "3"
+              },
+              {
+                "label": "arbitratorProposer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "proposedArbitrators",
+                "type": "t_array(t_struct(Arbitrator)3040_storage)dyn_storage",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_struct(PayData)3035_storage": {
+            "label": "struct PayData",
+            "members": [
+              {
+                "label": "pauseDuration",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "pauseResumeTime",
+                "type": "t_uint40",
+                "offset": 5,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayTimeStamp",
+                "type": "t_uint40",
+                "offset": 10,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayAmount",
+                "type": "t_uint128",
+                "offset": 15,
+                "slot": "0"
+              },
+              {
+                "label": "proposedAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "ae917b2df55cc09d4495d413b20400c02a39d055922d0f83c7135216eed9f949": {
+      "address": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "txHash": "0xd5317d83d753d124d1bee992c69b2755b279b08c12b235a06d276b45f12027a7",
+      "layout": {
+        "solcVersion": "0.8.16",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "pactsCounter",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_uint256",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:45"
+          },
+          {
+            "label": "pactData",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_mapping(t_bytes32,t_struct(PactData)3034_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:46"
+          },
+          {
+            "label": "payData",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_bytes32,t_struct(PayData)3045_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:47"
+          },
+          {
+            "label": "isEmployeeDelegate",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:48"
+          },
+          {
+            "label": "isEmployerDelegate",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:49"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(Arbitrator)3050_storage)dyn_storage": {
+            "label": "struct Arbitrator[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_enum(PactState)3006": {
+            "label": "enum PactState",
+            "members": [
+              "DEPLOYED",
+              "RETRACTED",
+              "EMPLOYER_SIGNED",
+              "EMPLOYEE_SIGNED",
+              "ALL_SIGNED",
+              "ACTIVE",
+              "PAUSED",
+              "TERMINATED",
+              "RESIGNED",
+              "FNF_EMPLOYER",
+              "FNF_EMPLOYEE",
+              "DISPUTED",
+              "ARBITRATED",
+              "FNF_SETTLED",
+              "DISPUTE_RESOLVED",
+              "ENDED"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_mapping(t_address,t_bool))": {
+            "label": "mapping(bytes32 => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PactData)3034_storage)": {
+            "label": "mapping(bytes32 => struct PactData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PayData)3045_storage)": {
+            "label": "mapping(bytes32 => struct PayData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Arbitrator)3050_storage": {
+            "label": "struct Arbitrator",
+            "members": [
+              {
+                "label": "addr",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "hasResolved",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PactData)3034_storage": {
+            "label": "struct PactData",
+            "members": [
+              {
+                "label": "pactName",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "employee",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "employeeSignDate",
+                "type": "t_uint40",
+                "offset": 20,
+                "slot": "1"
+              },
+              {
+                "label": "pactState",
+                "type": "t_enum(PactState)3006",
+                "offset": 25,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorAccepted",
+                "type": "t_bool",
+                "offset": 26,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorProposed",
+                "type": "t_bool",
+                "offset": 27,
+                "slot": "1"
+              },
+              {
+                "label": "payScheduleDays",
+                "type": "t_uint32",
+                "offset": 28,
+                "slot": "1"
+              },
+              {
+                "label": "employer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "payAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "stakeAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "3"
+              },
+              {
+                "label": "arbitratorProposer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "proposedArbitrators",
+                "type": "t_array(t_struct(Arbitrator)3050_storage)dyn_storage",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_struct(PayData)3045_storage": {
+            "label": "struct PayData",
+            "members": [
+              {
+                "label": "pauseDuration",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "pauseResumeTime",
+                "type": "t_uint40",
+                "offset": 5,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayTimeStamp",
+                "type": "t_uint40",
+                "offset": 10,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayAmount",
+                "type": "t_uint128",
+                "offset": 15,
+                "slot": "0"
+              },
+              {
+                "label": "proposedAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "7a08f68f8c840e50ab34f9e6578f47b21a141a67280a08754100ddfe628cf7db": {
+      "address": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+      "txHash": "0x76addd62ce1536ff1ce3ec28040edd1ed5b513e6e59eccb6587b7b4e7682c818",
+      "layout": {
+        "solcVersion": "0.8.16",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "pactsCounter",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_uint256",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:45"
+          },
+          {
+            "label": "pactData",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_mapping(t_bytes32,t_struct(PactData)3034_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:46"
+          },
+          {
+            "label": "payData",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_bytes32,t_struct(PayData)3045_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:47"
+          },
+          {
+            "label": "isEmployeeDelegate",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:48"
+          },
+          {
+            "label": "isEmployerDelegate",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:49"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(Arbitrator)3050_storage)dyn_storage": {
+            "label": "struct Arbitrator[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_enum(PactState)3006": {
+            "label": "enum PactState",
+            "members": [
+              "DEPLOYED",
+              "RETRACTED",
+              "EMPLOYER_SIGNED",
+              "EMPLOYEE_SIGNED",
+              "ALL_SIGNED",
+              "ACTIVE",
+              "PAUSED",
+              "TERMINATED",
+              "RESIGNED",
+              "FNF_EMPLOYER",
+              "FNF_EMPLOYEE",
+              "DISPUTED",
+              "ARBITRATED",
+              "FNF_SETTLED",
+              "DISPUTE_RESOLVED",
+              "ENDED"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_mapping(t_address,t_bool))": {
+            "label": "mapping(bytes32 => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PactData)3034_storage)": {
+            "label": "mapping(bytes32 => struct PactData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PayData)3045_storage)": {
+            "label": "mapping(bytes32 => struct PayData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Arbitrator)3050_storage": {
+            "label": "struct Arbitrator",
+            "members": [
+              {
+                "label": "addr",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "hasResolved",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PactData)3034_storage": {
+            "label": "struct PactData",
+            "members": [
+              {
+                "label": "pactName",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "employee",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "employeeSignDate",
+                "type": "t_uint40",
+                "offset": 20,
+                "slot": "1"
+              },
+              {
+                "label": "pactState",
+                "type": "t_enum(PactState)3006",
+                "offset": 25,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorAccepted",
+                "type": "t_bool",
+                "offset": 26,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorProposed",
+                "type": "t_bool",
+                "offset": 27,
+                "slot": "1"
+              },
+              {
+                "label": "payScheduleDays",
+                "type": "t_uint32",
+                "offset": 28,
+                "slot": "1"
+              },
+              {
+                "label": "employer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "payAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "stakeAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "3"
+              },
+              {
+                "label": "arbitratorProposer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "proposedArbitrators",
+                "type": "t_array(t_struct(Arbitrator)3050_storage)dyn_storage",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_struct(PayData)3045_storage": {
+            "label": "struct PayData",
+            "members": [
+              {
+                "label": "pauseDuration",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "pauseResumeTime",
+                "type": "t_uint40",
+                "offset": 5,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayTimeStamp",
+                "type": "t_uint40",
+                "offset": 10,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayAmount",
+                "type": "t_uint128",
+                "offset": 15,
+                "slot": "0"
+              },
+              {
+                "label": "proposedAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint128": {
+            "label": "uint128",
+            "numberOfBytes": "16"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint32": {
+            "label": "uint32",
+            "numberOfBytes": "4"
+          },
+          "t_uint40": {
+            "label": "uint40",
+            "numberOfBytes": "5"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        }
+      }
+    },
+    "d3793230cdae76789b11cc96d33733cfe4f84dd08c6c0fa8d2c481026d464e2a": {
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "txHash": "0xb9570d361433fc1ffc8df04c80b61089d77418d23ec9f98155cc5491c6a6126c",
+      "layout": {
+        "solcVersion": "0.8.16",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "152",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "pactsCounter",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_uint256",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:45"
+          },
+          {
+            "label": "pactData",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_mapping(t_bytes32,t_struct(PactData)3034_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:46"
+          },
+          {
+            "label": "payData",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_bytes32,t_struct(PayData)3045_storage)",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:47"
+          },
+          {
+            "label": "isEmployeeDelegate",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:48"
+          },
+          {
+            "label": "isEmployerDelegate",
+            "offset": 0,
+            "slot": "205",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_bool))",
+            "contract": "GigPactUpgradeable",
+            "src": "contracts/GigPactUpgradeable/GigPactUpgradeable.sol:49"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_struct(Arbitrator)3050_storage)dyn_storage": {
+            "label": "struct Arbitrator[]",
+            "numberOfBytes": "32"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_enum(PactState)3006": {
+            "label": "enum PactState",
+            "members": [
+              "DEPLOYED",
+              "RETRACTED",
+              "EMPLOYER_SIGNED",
+              "EMPLOYEE_SIGNED",
+              "ALL_SIGNED",
+              "ACTIVE",
+              "PAUSED",
+              "TERMINATED",
+              "RESIGNED",
+              "FNF_EMPLOYER",
+              "FNF_EMPLOYEE",
+              "DISPUTED",
+              "ARBITRATED",
+              "FNF_SETTLED",
+              "DISPUTE_RESOLVED",
+              "ENDED"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_mapping(t_address,t_bool))": {
+            "label": "mapping(bytes32 => mapping(address => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PactData)3034_storage)": {
+            "label": "mapping(bytes32 => struct PactData)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(PayData)3045_storage)": {
+            "label": "mapping(bytes32 => struct PayData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Arbitrator)3050_storage": {
+            "label": "struct Arbitrator",
+            "members": [
+              {
+                "label": "addr",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "hasResolved",
+                "type": "t_bool",
+                "offset": 20,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PactData)3034_storage": {
+            "label": "struct PactData",
+            "members": [
+              {
+                "label": "pactName",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "employee",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "employeeSignDate",
+                "type": "t_uint40",
+                "offset": 20,
+                "slot": "1"
+              },
+              {
+                "label": "pactState",
+                "type": "t_enum(PactState)3006",
+                "offset": 25,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorAccepted",
+                "type": "t_bool",
+                "offset": 26,
+                "slot": "1"
+              },
+              {
+                "label": "arbitratorProposed",
+                "type": "t_bool",
+                "offset": 27,
+                "slot": "1"
+              },
+              {
+                "label": "payScheduleDays",
+                "type": "t_uint32",
+                "offset": 28,
+                "slot": "1"
+              },
+              {
+                "label": "employer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "payAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "stakeAmount",
+                "type": "t_uint128",
+                "offset": 16,
+                "slot": "3"
+              },
+              {
+                "label": "arbitratorProposer",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "proposedArbitrators",
+                "type": "t_array(t_struct(Arbitrator)3050_storage)dyn_storage",
+                "offset": 0,
+                "slot": "5"
+              }
+            ],
+            "numberOfBytes": "192"
+          },
+          "t_struct(PayData)3045_storage": {
+            "label": "struct PayData",
+            "members": [
+              {
+                "label": "pauseDuration",
+                "type": "t_uint40",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "pauseResumeTime",
+                "type": "t_uint40",
+                "offset": 5,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayTimeStamp",
+                "type": "t_uint40",
+                "offset": 10,
+                "slot": "0"
+              },
+              {
+                "label": "lastPayAmount",
+                "type": "t_uint128",
+                "offset": 15,
+                "slot": "0"
+              },
+              {
+                "label": "proposedAmount",
+                "type": "t_uint128",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
           },
           "t_uint128": {
             "label": "uint128",
