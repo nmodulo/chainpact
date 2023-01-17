@@ -4,6 +4,7 @@ pragma solidity 0.8.16;
 import "../Structs.sol";
 import "../GigPactUpgradeable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetFixedSupply.sol";
 
 library PaymentHelper {
     event LogPaymentMade(
@@ -36,8 +37,7 @@ library PaymentHelper {
             payable(pactData_.employee).transfer(msg.value);
             result = true;
         } else {
-            IERC20 tokenContract = IERC20(pactData_.erc20TokenAddress);
-            result = tokenContract.transferFrom(
+            result = IERC20(pactData_.erc20TokenAddress).transferFrom(
                 msg.sender,
                 pactData_.employee,
                 pactData_.payAmount
@@ -56,6 +56,7 @@ library PaymentHelper {
     function fNf(
         address gigPactAddress,
         bytes32 pactid,
+        uint tokenAmount,
         PactData storage pactData,
         PayData storage payData
     ) external {
@@ -87,7 +88,10 @@ library PaymentHelper {
             } else if (pactState_ == PactState.FNF_EMPLOYER) {
                 pactState_ = PactState.FNF_SETTLED;
             }
-            if (msg.value > 0) {
+            if (
+                (pactData.erc20TokenAddress == address(0) && msg.value > 0) ||
+                (tokenAmount != 0 && pactData.erc20TokenAddress != address(0))
+            ) {
                 receiver = pactData.employer;
             }
         } else if (
@@ -104,7 +108,10 @@ library PaymentHelper {
             } else if (pactState_ == PactState.FNF_EMPLOYEE) {
                 pactState_ = PactState.FNF_SETTLED;
             }
-            if (msg.value > 0) {
+            if (
+                (pactData.erc20TokenAddress == address(0) && msg.value > 0) ||
+                (tokenAmount != 0 && pactData.erc20TokenAddress != address(0))
+            ) {
                 if (
                     pactState_ == PactState.DISPUTED &&
                     msg.value >= payData.proposedAmount
@@ -122,7 +129,15 @@ library PaymentHelper {
         }
         if (receiver != address(0)) {
             // emit LogPaymentMade(pactid, msg.value, msg.sender);
-            payable(receiver).transfer(msg.value);
+            if(tokenAmount == 0)
+                payable(receiver).transfer(msg.value);
+            else {
+                bool result = IERC20(pactData.erc20TokenAddress).transferFrom(
+                msg.sender,
+                receiver,
+                tokenAmount
+            );
+            }
         }
     }
 }

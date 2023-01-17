@@ -241,7 +241,21 @@ contract GigPactUpgradeable is
     function approvePayment(
         bytes32 pactid
     ) external payable onlyEmployer(pactid) isActive(pactid) {
-        PactData memory pactData_ = pactData[pactid];
+        // PactData memory pactData_ = pactData[pactid];
+        // (uint lastPayTimeStamp, uint pauseDuration) = (
+        //     payData[pactid].lastPayTimeStamp,
+        //     payData[pactid].pauseDuration
+        // );
+        (
+            address employee,
+            uint payAmount,
+            address erc20TokenAddress
+
+        ) = (
+                pactData[pactid].employee,
+                pactData[pactid].payAmount,
+                pactData[pactid].erc20TokenAddress
+            );
         // require(
         //     msg.value >= pactData_.payAmount,
         //     "Amount less than payAmount"
@@ -252,24 +266,25 @@ contract GigPactUpgradeable is
         // payable(pactData[pactid].employee).transfer(msg.value);
 
         bool result;
-        if (pactData_.erc20TokenAddress == address(0)) {
+        if (erc20TokenAddress == address(0)) {
             require(
-                msg.value >= pactData_.payAmount,
+                msg.value >= payAmount,
                 "Amount less than payAmount"
             );
-            result = payable(pactData_.employee).send(msg.value);
+            result = payable(employee).send(msg.value);
+
             // result = true;
         } else {
             // IERC20 tokenContract = IERC20(pactData_.erc20TokenAddress);
-            result = IERC20(pactData_.erc20TokenAddress).transferFrom(
+            result = IERC20(erc20TokenAddress).transferFrom(
                 msg.sender,
-                pactData_.employee,
-                pactData_.payAmount
+                employee,
+                payAmount
             );
         }
         if (result) {
             payData[pactid].lastPayTimeStamp = uint40(block.timestamp);
-            payData[pactid].lastPayAmount = uint128(msg.value);
+            payData[pactid].lastPayAmount = uint128(erc20TokenAddress == address(0) ? msg.value: payAmount);
             payData[pactid].pauseDuration = 0;
             emit LogPaymentMade(pactid, msg.value, msg.sender);
         }
@@ -315,11 +330,9 @@ contract GigPactUpgradeable is
         // PactData memory pactData_ = pactData[pactid];
         require(payee != address(0));
         (
-            address employee,
             PactState pactState_,
             uint stakeAmount_
         ) = (
-                pactData[pactid].employee,
                 pactData[pactid].pactState,
                 pactData[pactid].stakeAmount
             );
@@ -336,9 +349,8 @@ contract GigPactUpgradeable is
         if (pactData[pactid].erc20TokenAddress == address(0)) {
             result = payee.send(stakeAmount_);
         } else {
-            result = IERC20(pactData[pactid].erc20TokenAddress).transferFrom(
-                msg.sender,
-                employee,
+            result = IERC20(pactData[pactid].erc20TokenAddress).transfer(
+                payee,
                 stakeAmount_
             );
         }
@@ -416,10 +428,11 @@ contract GigPactUpgradeable is
         emit LogStateUpdate(pactid, pactState_, msg.sender);
     }
 
-    function fNf(bytes32 pactid) external payable {
+    function fNf(bytes32 pactid, uint tokenAmount) external payable {
         PaymentHelper.fNf(
             address(this),
             pactid,
+            tokenAmount,
             pactData[pactid],
             payData[pactid]
         );

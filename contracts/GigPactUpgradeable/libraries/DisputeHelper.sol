@@ -22,7 +22,7 @@ library DisputeHelper{
         PayData storage payData_,
         uint suggestedAmountClaim
     ) external {
-        require(GigPactUpgradeable(gigPactAddress).isEmployeeDelegate(pactid, msg.sender), "Unauthorized");
+        require(GigPactUpgradeable(gigPactAddress).isEmployeeDelegate(pactid, msg.sender), "employee delegate only");
         require(pactData_.pactState == PactState.FNF_EMPLOYER);
         pactData_.pactState = PactState.DISPUTED;
         payData_.proposedAmount = uint128(suggestedAmountClaim);
@@ -87,7 +87,7 @@ library DisputeHelper{
         bytes32 pactid,
         PactData storage pactData_
         // PayData memory payData_,
-        ) external returns (PactState){
+        ) external {
         require(
             pactData_.pactState == PactState.ARBITRATED,
             "Not arbitrated"
@@ -105,11 +105,11 @@ library DisputeHelper{
         }
         if (allResolved) {
             pactData_.pactState = PactState.DISPUTE_RESOLVED;
-            // return PactState.DISPUTE_RESOLVED;
             emit LogStateUpdate(pactid, PactState.DISPUTE_RESOLVED, msg.sender);
+            // return PactState.DISPUTE_RESOLVED;
         } else {
             emit LogStateUpdate(pactid, PactState.DISPUTE_RESOLVED, msg.sender);
-            return PactState.ARBITRATED;
+            // return PactState.ARBITRATED;
         }
     }
 }
