@@ -64,7 +64,7 @@ async function createNewPact(
   return { resultingEvent, tx }
 }
 
-async function createAndSignRandomPact( erc20TokenAddress = "0x0000000000000000000000000000000000000000",
+async function createAndSignRandomPact(erc20TokenAddress = "0x0000000000000000000000000000000000000000",
 ) {
   let { resultingEvent } = await createNewPact(erc20TokenAddress)
   let signingDate = new Date().getTime()
@@ -91,14 +91,14 @@ async function createAndSignRandomPact( erc20TokenAddress = "0x00000000000000000
 }
 
 async function deployToDisputePact(suggestedAmt: BigNumberish) {
-  let {resultingEvent} = await createAndSignRandomPact()
+  let { resultingEvent } = await createAndSignRandomPact()
   await pact.delegatePact(resultingEvent.pactid, [employerDelegate.address], true)
   await pact.connect(employee).delegatePact(resultingEvent.pactid, [employeeDelegate.address], true)
   await pact.connect(employerDelegate).startPause(resultingEvent.pactid, true)
   await pact.connect(employerDelegate).terminate(resultingEvent.pactid)
   await pact.connect(employerDelegate).fNf(resultingEvent.pactid, 0, { value: suggestedAmt })
   await pact.connect(employeeDelegate).dispute(resultingEvent.pactid, suggestedAmt)
-  return {resultingEvent}
+  return { resultingEvent }
 }
 
 const [testCreate, testSigning, testPactions, testdispute, testErc] = [false, false, false, false, true]
@@ -107,11 +107,11 @@ describe("Gig Pact Test", function () {
 
   this.beforeAll(async () => {
     await setSigners()
-    
+
     let pactSigFactory: PactSignature__factory = await ethers.getContractFactory("PactSignature")
     pactSigLib = await pactSigFactory.deploy()
     pactSigLib = await pactSigLib.deployed()
-    
+
     let disputeHelperFactory: DisputeHelper__factory = await ethers.getContractFactory("DisputeHelper")
     disputeHelperLib = await disputeHelperFactory.deploy()
     disputeHelperLib = await disputeHelperLib.deployed()
@@ -123,8 +123,8 @@ describe("Gig Pact Test", function () {
     let erc20factory: ERC20PresetFixedSupply__factory = await ethers.getContractFactory("ERC20PresetFixedSupply")
     erc20Contract = await erc20factory.deploy('USDN', 'USDN', parseEther("1000"), employer.address)
     erc20Contract = await erc20Contract.deployed()
-    
-    
+
+
     let pactFactory: GigPactUpgradeable__factory = await ethers.getContractFactory("GigPactUpgradeable", {
       libraries: {
         PactSignature: pactSigLib.address,
@@ -155,7 +155,7 @@ describe("Gig Pact Test", function () {
       it("shouldn't allow invalid address values in employer or employee address", async function () {
         let errorFlag = false
         try {
-          await createNewPact("0x0000000000000000000000000000000000000000","Pactt", "0x0", employee.address, 2, BigNumber.from("200"))
+          await createNewPact("0x0000000000000000000000000000000000000000", "Pactt", "0x0", employee.address, 2, BigNumber.from("200"))
         } catch (err: any) {
           errorFlag = true
           expect(err.code).to.eq('INVALID_ARGUMENT')
@@ -401,7 +401,7 @@ describe("Gig Pact Test", function () {
   if (testdispute)
     describe("Dispute", function () {
       it("should allow employee to raise a dispute on terminate and fNf", async function () {
-        let {resultingEvent} = await createAndSignRandomPact()
+        let { resultingEvent } = await createAndSignRandomPact()
         await pact.delegatePact(resultingEvent.pactid, [employerDelegate.address], true)
         await pact.connect(employee).delegatePact(resultingEvent.pactid, [employeeDelegate.address], true)
         await pact.connect(employerDelegate).startPause(resultingEvent.pactid, true)
@@ -430,28 +430,28 @@ describe("Gig Pact Test", function () {
 
       it("should not allow employer to reclaim, pay, destroy, sign when disputed", async function () {
         let suggestedAmt = BigNumber.from(100)
-        let {resultingEvent} = await deployToDisputePact(suggestedAmt)
+        let { resultingEvent } = await deployToDisputePact(suggestedAmt)
         await expect(pact.reclaimStake(resultingEvent.pactid, employer.address)).to.be.reverted
       })
 
       it("should not allow adding arbitrators after arbitrators accepted", async function () {
         let suggestedAmt = BigNumber.from(100)
-        let {resultingEvent} = await deployToDisputePact(suggestedAmt)
+        let { resultingEvent } = await deployToDisputePact(suggestedAmt)
         await pact.connect(employee).proposeArbitrators(resultingEvent.pactid, [arbitrator1.address])
         await pact.connect(employer).acceptOrRejectArbitrators(resultingEvent.pactid, true)
 
 
         resultingEvent = (await deployToDisputePact(suggestedAmt)).resultingEvent
         await expect(await pact.connect(employee).proposeArbitrators(resultingEvent.pactid, [arbitrator2.address])).to.not.be.reverted
-        await expect( await pact.connect(employer).acceptOrRejectArbitrators(resultingEvent.pactid,false)).to.not.be.reverted
-        await expect(pact.connect(employee).proposeArbitrators(resultingEvent.pactid,[arbitrator2.address])).to.not.be.reverted
+        await expect(await pact.connect(employer).acceptOrRejectArbitrators(resultingEvent.pactid, false)).to.not.be.reverted
+        await expect(pact.connect(employee).proposeArbitrators(resultingEvent.pactid, [arbitrator2.address])).to.not.be.reverted
       })
 
       it("should correctly perform arbitration", async function () {
         let suggestedAmt = BigNumber.from(100)
-        let {resultingEvent} = await deployToDisputePact(suggestedAmt)
-        await pact.connect(employee).proposeArbitrators(resultingEvent.pactid,[arbitrator1.address, arbitrator2.address])
-        await pact.connect(employer).acceptOrRejectArbitrators(resultingEvent.pactid,true)
+        let { resultingEvent } = await deployToDisputePact(suggestedAmt)
+        await pact.connect(employee).proposeArbitrators(resultingEvent.pactid, [arbitrator1.address, arbitrator2.address])
+        await pact.connect(employer).acceptOrRejectArbitrators(resultingEvent.pactid, true)
         expect((await pact.getAllPactData(resultingEvent.pactid))[0].pactState).to.eq(PactState.ARBITRATED)
 
         await pact.connect(thirdParty).arbitratorResolve(resultingEvent.pactid,)
@@ -459,16 +459,16 @@ describe("Gig Pact Test", function () {
 
         await expect(await pact.connect(arbitrator1).arbitratorResolve(resultingEvent.pactid)).to.not.be.reverted
         expect((await pact.getAllPactData(resultingEvent.pactid))[0].pactState).to.eq(PactState.ARBITRATED)
-        await expect(pact.reclaimStake(resultingEvent.pactid,employer.address)).to.be.reverted
+        await expect(pact.reclaimStake(resultingEvent.pactid, employer.address)).to.be.reverted
 
         await expect(await pact.connect(arbitrator2).arbitratorResolve(resultingEvent.pactid,)).to.not.be.reverted
         expect((await pact.getAllPactData(resultingEvent.pactid))[0].pactState).to.eq(PactState.DISPUTE_RESOLVED)
 
-        await expect(pact.connect(employee).dispute(resultingEvent.pactid,suggestedAmt)).to.be.reverted
+        await expect(pact.connect(employee).dispute(resultingEvent.pactid, suggestedAmt)).to.be.reverted
 
         let balanceBefore = await employer.getBalance()
         let stakeAmount = (await pact.getAllPactData(resultingEvent.pactid))[0].stakeAmount
-        let tx = await pact.reclaimStake(resultingEvent.pactid,employer.address)
+        let tx = await pact.reclaimStake(resultingEvent.pactid, employer.address)
         await expect(tx).to.not.be.reverted
 
         let receipt = await tx.wait()
@@ -480,25 +480,25 @@ describe("Gig Pact Test", function () {
       })
       it("should allow fNf to both parties during arbitration and no dispute", async function () {
         let suggestedAmt = BigNumber.from(100)
-        let {resultingEvent} = await deployToDisputePact(suggestedAmt)
-        await pact.connect(employee).proposeArbitrators(resultingEvent.pactid,[arbitrator1.address, arbitrator2.address])
+        let { resultingEvent } = await deployToDisputePact(suggestedAmt)
+        await pact.connect(employee).proposeArbitrators(resultingEvent.pactid, [arbitrator1.address, arbitrator2.address])
         await pact.connect(employer).acceptOrRejectArbitrators(resultingEvent.pactid, true)
         expect((await pact.getAllPactData(resultingEvent.pactid))[0].pactState).to.eq(PactState.ARBITRATED)
         await expect(await pact.fNf(resultingEvent.pactid, 0, { value: 100 })).to.not.be.reverted
         await expect(await pact.connect(employee).fNf(resultingEvent.pactid, 0, { value: 100 })).to.not.be.reverted
       })
     })
-  
-  if(testErc)
-  describe("ERC", function() {
-    it("should allow creating, signing, reclaim pact with erc20", async function () {
-      let tokensToLock = parseEther("10")
-      let tokenBalanceBefore = await erc20Contract.balanceOf(employer.address)
-      let { resultingEvent } = await createNewPact(erc20Contract.address,
-        "Test ERC", employee.address, employer.address, 7, tokensToLock
-      )
-      expect(resultingEvent.pactid).to.have.length(66)
-      let signingDate = new Date().getTime()
+
+  if (testErc)
+    describe("ERC", function () {
+      it("should allow creating, signing, reclaim pact with erc20", async function () {
+        let tokensToLock = parseEther("10")
+        let tokenBalanceBefore = await erc20Contract.balanceOf(employer.address)
+        let { resultingEvent } = await createNewPact(erc20Contract.address,
+          "Test ERC", employee.address, employer.address, 7, tokensToLock
+        )
+        expect(resultingEvent.pactid).to.have.length(66)
+        let signingDate = new Date().getTime()
         let pactData = await pact.getAllPactData(resultingEvent.pactid)
         let contractDataHash = await pactSigLib.contractDataHash(
           pactData[0].pactName.toLowerCase(),
@@ -517,57 +517,74 @@ describe("Gig Pact Test", function () {
         expect(pactData[0].pactState).to.eq(PactState.EMPLOYER_SIGNED)
         expect(pactData[0].stakeAmount).to.eq(tokensToLock)
         expect(await erc20Contract.balanceOf(employer.address)).to.eq(tokenBalanceBefore.sub(tokensToLock))
-        
+
         await pact.reclaimStake(resultingEvent.pactid, employer.address)
         pactData = await pact.getAllPactData(resultingEvent.pactid)
         expect(pactData[0].pactState).to.eq(PactState.RETRACTED)
-        expect(await  erc20Contract.balanceOf(employer.address)).to.eq(tokenBalanceBefore)
-    })
+        expect(await erc20Contract.balanceOf(employer.address)).to.eq(tokenBalanceBefore)
+      })
 
-    it("should allow payment, terminate, fnf with amount, reclaim with erc20", async function () {
-      let {resultingEvent} = await createAndSignRandomPact(erc20Contract.address)
-      expect(resultingEvent.pactid).to.have.length(66)
-      await pact.startPause(resultingEvent.pactid, true)
-      let pactData = await pact.getAllPactData(resultingEvent.pactid)
-      expect(pactData[0].pactState).to.eq(PactState.ACTIVE)
+      it("should allow payment, terminate, fnf with amount, reclaim with erc20", async function () {
+        let { resultingEvent } = await createAndSignRandomPact(erc20Contract.address)
+        expect(resultingEvent.pactid).to.have.length(66)
+        await pact.startPause(resultingEvent.pactid, true)
+        let pactData = await pact.getAllPactData(resultingEvent.pactid)
+        expect(pactData[0].pactState).to.eq(PactState.ACTIVE)
 
-      let employeeTokenBalance = await erc20Contract.balanceOf(employee.address)
-      await pact.approvePayment(resultingEvent.pactid)
-      pactData = await pact.getAllPactData(resultingEvent.pactid)
-      employeeTokenBalance = employeeTokenBalance.add(defaultValues.payAmount)
-      expect(employeeTokenBalance).to.eq(await erc20Contract.balanceOf(employee.address))
-      expect(pactData[1].lastPayAmount).to.eq(defaultValues.payAmount)
+        let employeeTokenBalance = await erc20Contract.balanceOf(employee.address)
+        await pact.approvePayment(resultingEvent.pactid)
+        pactData = await pact.getAllPactData(resultingEvent.pactid)
+        employeeTokenBalance = employeeTokenBalance.add(defaultValues.payAmount)
+        expect(employeeTokenBalance).to.eq(await erc20Contract.balanceOf(employee.address))
+        expect(pactData[1].lastPayAmount).to.eq(defaultValues.payAmount)
 
-      await pact.terminate(resultingEvent.pactid)
-      pactData = await pact.getAllPactData(resultingEvent.pactid)
-      expect(pactData[0].pactState).to.eq(PactState.TERMINATED)
+        await pact.terminate(resultingEvent.pactid)
+        pactData = await pact.getAllPactData(resultingEvent.pactid)
+        expect(pactData[0].pactState).to.eq(PactState.TERMINATED)
 
 
-      await pact.fNf(resultingEvent.pactid, defaultValues.payAmount)
-      employeeTokenBalance = employeeTokenBalance.add(defaultValues.payAmount)
-      expect(employeeTokenBalance).to.eq(await erc20Contract.balanceOf(employee.address))
-      pactData = await pact.getAllPactData(resultingEvent.pactid)
-      expect(pactData[0].pactState).to.eq(PactState.FNF_EMPLOYER)
+        await pact.fNf(resultingEvent.pactid, defaultValues.payAmount)
+        employeeTokenBalance = employeeTokenBalance.add(defaultValues.payAmount)
+        expect(employeeTokenBalance).to.eq(await erc20Contract.balanceOf(employee.address))
+        pactData = await pact.getAllPactData(resultingEvent.pactid)
+        expect(pactData[0].pactState).to.eq(PactState.FNF_EMPLOYER)
 
-      let employerTokenBalance = await erc20Contract.balanceOf(employer.address)
-      await erc20Contract.connect(employee).approve(pact.address, defaultValues.payAmount)
-      await pact.connect(employee).fNf(resultingEvent.pactid, defaultValues.payAmount)
-      employerTokenBalance = employerTokenBalance.add(defaultValues.payAmount)
-      expect(employerTokenBalance).to.eq(await erc20Contract.balanceOf(employer.address))
-      pactData = await pact.getAllPactData(resultingEvent.pactid)
-      expect(pactData[0].pactState).to.eq(PactState.FNF_SETTLED)
+        let employerTokenBalance = await erc20Contract.balanceOf(employer.address)
+        await erc20Contract.connect(employee).approve(pact.address, defaultValues.payAmount)
+        await pact.connect(employee).fNf(resultingEvent.pactid, defaultValues.payAmount)
+        employerTokenBalance = employerTokenBalance.add(defaultValues.payAmount)
+        expect(employerTokenBalance).to.eq(await erc20Contract.balanceOf(employer.address))
+        pactData = await pact.getAllPactData(resultingEvent.pactid)
+        expect(pactData[0].pactState).to.eq(PactState.FNF_SETTLED)
 
-      employerTokenBalance = await erc20Contract.balanceOf(employer.address)
-      await pact.reclaimStake(resultingEvent.pactid, employer.address)
-      employerTokenBalance = employerTokenBalance.add(pactData[0].stakeAmount)
-      expect(employerTokenBalance).to.eq(await erc20Contract.balanceOf(employer.address))
-      pactData = await pact.getAllPactData(resultingEvent.pactid)
-      expect(pactData[0].pactState).to.eq(PactState.ENDED)
+        employerTokenBalance = await erc20Contract.balanceOf(employer.address)
+        await pact.reclaimStake(resultingEvent.pactid, employer.address)
+        employerTokenBalance = employerTokenBalance.add(pactData[0].stakeAmount)
+        expect(employerTokenBalance).to.eq(await erc20Contract.balanceOf(employer.address))
+        pactData = await pact.getAllPactData(resultingEvent.pactid)
+        expect(pactData[0].pactState).to.eq(PactState.ENDED)
 
-    })
+      })
 
-    it("should allow disputing, resolving with erc20", async function () {
+      it("should allow disputing, resolving with erc20", async function () {
+        let { resultingEvent } = await createAndSignRandomPact(erc20Contract.address)
+        await pact.startPause(resultingEvent.pactid, true)
+        await pact.terminate(resultingEvent.pactid)
+        let employeeTokenBalance = await erc20Contract.balanceOf(employee.address)
       
+        await pact.fNf(resultingEvent.pactid, defaultValues.payAmount)
+        employeeTokenBalance = employeeTokenBalance.add(defaultValues.payAmount)
+        expect(employeeTokenBalance).to.eq(await erc20Contract.balanceOf(employee.address))
+
+        await pact.connect(employee).dispute(resultingEvent.pactid, defaultValues.payAmount)
+        let pactData = await pact.getAllPactData(resultingEvent.pactid)
+        expect(pactData[0].pactState).to.eq(PactState.DISPUTED)
+
+
+        await pact.fNf(resultingEvent.pactid, defaultValues.payAmount)
+        pactData = await pact.getAllPactData(resultingEvent.pactid)
+        expect(pactData[0].pactState).to.eq(PactState.DISPUTED)
+
+      })
     })
-  })
 });

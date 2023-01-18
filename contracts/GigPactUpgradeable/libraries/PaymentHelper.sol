@@ -112,12 +112,6 @@ library PaymentHelper {
                 (pactData.erc20TokenAddress == address(0) && msg.value > 0) ||
                 (tokenAmount != 0 && pactData.erc20TokenAddress != address(0))
             ) {
-                if (
-                    pactState_ == PactState.DISPUTED &&
-                    msg.value >= payData.proposedAmount
-                ) {
-                    pactState_ = PactState.FNF_SETTLED;
-                }
                 receiver = pactData.employee;
             }
         } else {
@@ -129,14 +123,24 @@ library PaymentHelper {
         }
         if (receiver != address(0)) {
             // emit LogPaymentMade(pactid, msg.value, msg.sender);
-            if(tokenAmount == 0)
-                payable(receiver).transfer(msg.value);
-            else {
-                bool result = IERC20(pactData.erc20TokenAddress).transferFrom(
-                msg.sender,
-                receiver,
-                tokenAmount
-            );
+            bool result;
+            if (tokenAmount == 0) {
+                result = payable(receiver).send(msg.value);
+            } else {
+                result = IERC20(pactData.erc20TokenAddress).transferFrom(
+                    msg.sender,
+                    receiver,
+                    tokenAmount
+                );
+                if (
+                    pactState_ == PactState.DISPUTED &&
+                    receiver == pactData.employee &&
+                    result &&
+                    (msg.value >= payData.proposedAmount ||
+                        tokenAmount >= payData.proposedAmount)
+                ) {
+                    pactState_ = PactState.FNF_SETTLED;
+                }
             }
         }
     }
