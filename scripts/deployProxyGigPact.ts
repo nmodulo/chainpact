@@ -17,10 +17,17 @@ async function main() {
  disputeHelperLib = await disputeHelperLib.deployed()
  console.log("DisputeHelper library deployed at address ", disputeHelperLib.address)
 
+ let payHelperFactory = await ethers.getContractFactory("PaymentHelper")
+ console.log("Deploying PaymentHelper library...")
+ let payHelperLib = await payHelperFactory.deploy()
+ payHelperLib = await payHelperLib.deployed()
+ console.log("PaymentHelper library deployed at address ", payHelperLib.address)
+
  let gigPactFactory = await ethers.getContractFactory("GigPactUpgradeable", {
    libraries: {
      PactSignature: pactSigLib.address,
      DisputeHelper: disputeHelperLib.address,
+     PaymentHelper: payHelperLib.address
    }
  })
 

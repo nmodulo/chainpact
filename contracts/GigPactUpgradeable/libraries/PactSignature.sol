@@ -3,7 +3,8 @@
 pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
+// import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../Structs.sol";
 
 library PactSignature {
@@ -14,26 +15,31 @@ library PactSignature {
         address employer,
         uint payScheduleDays,
         uint payAmount,
+        address erc20TokenAddress,
         uint256 signingDate_
     ) public pure returns (bytes32) {
         // PactData memory pactData_ = pactData[pactid];
+        
         return
             keccak256(
                 abi.encodePacked(
                     "ChainPact - Simple Gig pact - I hereby agree with the following ",
                     "For this pact named ",
                     pactName,
-                    "Pact ID",
+                    " Pact ID ",
                     pactid,
-                    "Employee ",
+                    " Employee ",
                     employee,
-                    "Employer ",
+                    " Employer ",
                     employer,
-                    "Pay Schedule in days ",
+                    " Pay Schedule in days ",
                     payScheduleDays,
-                    "payAmount in native ",
+                    " payAmount (parsed) ",
                     payAmount,
-                    "Signing DateTime ",
+                    erc20TokenAddress == address(0)? " Native chain currency": " Token Currency ",
+                    " Token address ",
+                    erc20TokenAddress,
+                    " Signing DateTime ",
                     signingDate_
                 )
             );
@@ -61,6 +67,7 @@ library PactSignature {
             pactData_.employer,
             pactData_.payScheduleDays,
             pactData_.payAmount,
+            pactData_.erc20TokenAddress,
             signingDate_
         );
         address signer_ = recoverContractSigner(signature, contractDataHash_);

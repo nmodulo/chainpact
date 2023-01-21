@@ -215,6 +215,11 @@
         "internalType": "uint128",
         "name": "payAmount_",
         "type": "uint128"
+      },
+      {
+        "internalType": "address",
+        "name": "erc20TokenAddress_",
+        "type": "address"
       }
     ],
     "name": "createPact",
@@ -269,6 +274,11 @@
         "internalType": "bytes32",
         "name": "pactid",
         "type": "bytes32"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenAmount",
+        "type": "uint256"
       }
     ],
     "name": "fNf",
@@ -284,119 +294,8 @@
         "type": "bytes32"
       }
     ],
-    "name": "getAllPactData",
+    "name": "getArbitratrators",
     "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "bytes32",
-            "name": "pactName",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "address",
-            "name": "employee",
-            "type": "address"
-          },
-          {
-            "internalType": "uint40",
-            "name": "employeeSignDate",
-            "type": "uint40"
-          },
-          {
-            "internalType": "enum PactState",
-            "name": "pactState",
-            "type": "uint8"
-          },
-          {
-            "internalType": "bool",
-            "name": "arbitratorAccepted",
-            "type": "bool"
-          },
-          {
-            "internalType": "bool",
-            "name": "arbitratorProposed",
-            "type": "bool"
-          },
-          {
-            "internalType": "uint32",
-            "name": "payScheduleDays",
-            "type": "uint32"
-          },
-          {
-            "internalType": "address",
-            "name": "employer",
-            "type": "address"
-          },
-          {
-            "internalType": "uint128",
-            "name": "payAmount",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "stakeAmount",
-            "type": "uint128"
-          },
-          {
-            "internalType": "address",
-            "name": "arbitratorProposer",
-            "type": "address"
-          },
-          {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "addr",
-                "type": "address"
-              },
-              {
-                "internalType": "bool",
-                "name": "hasResolved",
-                "type": "bool"
-              }
-            ],
-            "internalType": "struct Arbitrator[]",
-            "name": "proposedArbitrators",
-            "type": "tuple[]"
-          }
-        ],
-        "internalType": "struct PactData",
-        "name": "",
-        "type": "tuple"
-      },
-      {
-        "components": [
-          {
-            "internalType": "uint40",
-            "name": "pauseDuration",
-            "type": "uint40"
-          },
-          {
-            "internalType": "uint40",
-            "name": "pauseResumeTime",
-            "type": "uint40"
-          },
-          {
-            "internalType": "uint40",
-            "name": "lastPayTimeStamp",
-            "type": "uint40"
-          },
-          {
-            "internalType": "uint128",
-            "name": "lastPayAmount",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint128",
-            "name": "proposedAmount",
-            "type": "uint128"
-          }
-        ],
-        "internalType": "struct PayData",
-        "name": "",
-        "type": "tuple"
-      },
       {
         "components": [
           {
@@ -481,6 +380,119 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "pactData",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "pactName",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint40",
+        "name": "employeeSignDate",
+        "type": "uint40"
+      },
+      {
+        "internalType": "enum PactState",
+        "name": "pactState",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "arbitratorAccepted",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "arbitratorProposed",
+        "type": "bool"
+      },
+      {
+        "internalType": "address",
+        "name": "employee",
+        "type": "address"
+      },
+      {
+        "internalType": "uint32",
+        "name": "payScheduleDays",
+        "type": "uint32"
+      },
+      {
+        "internalType": "address",
+        "name": "employer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "erc20TokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint128",
+        "name": "payAmount",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
+        "name": "stakeAmount",
+        "type": "uint128"
+      },
+      {
+        "internalType": "address",
+        "name": "arbitratorProposer",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "payData",
+    "outputs": [
+      {
+        "internalType": "uint40",
+        "name": "pauseDuration",
+        "type": "uint40"
+      },
+      {
+        "internalType": "uint40",
+        "name": "pauseResumeTime",
+        "type": "uint40"
+      },
+      {
+        "internalType": "uint40",
+        "name": "lastPayTimeStamp",
+        "type": "uint40"
+      },
+      {
+        "internalType": "uint128",
+        "name": "lastPayAmount",
+        "type": "uint128"
+      },
+      {
+        "internalType": "uint128",
+        "name": "proposedAmount",
+        "type": "uint128"
       }
     ],
     "stateMutability": "view",

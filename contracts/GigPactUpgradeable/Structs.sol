@@ -22,18 +22,18 @@ enum PactState {
 
 struct PactData {
     bytes32 pactName;
-    address employee;
     uint40 employeeSignDate;
     PactState pactState;
     bool arbitratorAccepted;
     bool arbitratorProposed;
+    address employee;
     uint32 payScheduleDays; 
 
     address employer;
+    address erc20TokenAddress;
     uint128 payAmount;
     uint128 stakeAmount;
     address arbitratorProposer;
-    address erc20TokenAddress;
     Arbitrator[] proposedArbitrators;
 }
 

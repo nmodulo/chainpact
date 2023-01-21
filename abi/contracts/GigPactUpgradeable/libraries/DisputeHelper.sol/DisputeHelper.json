@@ -1,5 +1,30 @@
 [
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "pactid",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum PactState",
+        "name": "newState",
+        "type": "uint8"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "updater",
+        "type": "address"
+      }
+    ],
+    "name": "LogStateUpdate",
+    "type": "event"
+  },
+  {
     "inputs": [],
     "name": "add",
     "outputs": [

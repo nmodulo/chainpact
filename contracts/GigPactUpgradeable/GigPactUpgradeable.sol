@@ -40,27 +40,37 @@ contract GigPactUpgradeable is
     );
     event LogPactCreated(address indexed creator, bytes32 pactid);
 
+
     //Data
 
-    uint pactsCounter;
-    mapping(bytes32 => PactData) internal pactData;
-    mapping(bytes32 => PayData) internal payData;
+    uint private pactsCounter;
+    mapping(bytes32 => PactData) public pactData;
+    mapping(bytes32 => PayData) public payData;
     mapping(bytes32 => mapping(address => bool)) public isEmployeeDelegate;
     mapping(bytes32 => mapping(address => bool)) public isEmployerDelegate;
 
-    function getAllPactData(
+    function getArbitratrators(
         bytes32 pactid
-    )
-        external
-        view
-        returns (PactData memory, PayData memory, Arbitrator[] memory)
-    {
-        return (
-            pactData[pactid],
-            payData[pactid],
-            pactData[pactid].proposedArbitrators
-        );
+    ) external view returns (Arbitrator[] memory) {
+        return pactData[pactid].proposedArbitrators;
     }
+
+    // function getAllPactData(
+    //     bytes32 pactid
+    // )
+    //     external
+    //     view
+    //     returns (PactData memory pactData_, PayData memory payData_, Arbitrator[] memory arbitrators_)
+    // {
+    //     pactData_ = pactData[pactid];
+    //     payData_ = payData[pactid];
+
+    //     return (
+    //         pactData_,
+    //         payData_,
+    //         pactData_.proposedArbitrators
+    //     );
+    // }
 
     //modifiers
     modifier onlyEmployer(bytes32 pactid) {
@@ -98,7 +108,6 @@ contract GigPactUpgradeable is
         _;
     }
 
-    //done dec 29
     function createPact(
         bytes32 pactName_,
         address employee_,
@@ -118,15 +127,17 @@ contract GigPactUpgradeable is
         );
         pactData[uid].pactName = pactName_;
         pactData[uid].employee = employee_;
-        pactData[uid].employer = employer_;
         pactData[uid].payScheduleDays = payScheduleDays_;
-        pactData[uid].payAmount = payAmount_;
+        pactData[uid].employer = employer_;
         pactData[uid].erc20TokenAddress = erc20TokenAddress_;
+        pactData[uid].payAmount = payAmount_;
         isEmployeeDelegate[uid][employee_] = true;
         isEmployerDelegate[uid][employer_] = true;
         pactsCounter++;
         emit LogPactCreated(msg.sender, uid);
     }
+
+
 
     // function signPact(
     //     bytes32 pactid,
@@ -246,16 +257,11 @@ contract GigPactUpgradeable is
         //     payData[pactid].lastPayTimeStamp,
         //     payData[pactid].pauseDuration
         // );
-        (
-            address employee,
-            uint payAmount,
-            address erc20TokenAddress
-
-        ) = (
-                pactData[pactid].employee,
-                pactData[pactid].payAmount,
-                pactData[pactid].erc20TokenAddress
-            );
+        (address employee, uint payAmount, address erc20TokenAddress) = (
+            pactData[pactid].employee,
+            pactData[pactid].payAmount,
+            pactData[pactid].erc20TokenAddress
+        );
         // require(
         //     msg.value >= pactData_.payAmount,
         //     "Amount less than payAmount"
@@ -267,10 +273,7 @@ contract GigPactUpgradeable is
 
         bool result;
         if (erc20TokenAddress == address(0)) {
-            require(
-                msg.value >= payAmount,
-                "Amount less than payAmount"
-            );
+            require(msg.value >= payAmount, "Amount less than payAmount");
             result = payable(employee).send(msg.value);
 
             // result = true;
@@ -284,7 +287,9 @@ contract GigPactUpgradeable is
         }
         if (result) {
             payData[pactid].lastPayTimeStamp = uint40(block.timestamp);
-            payData[pactid].lastPayAmount = uint128(erc20TokenAddress == address(0) ? msg.value: payAmount);
+            payData[pactid].lastPayAmount = uint128(
+                erc20TokenAddress == address(0) ? msg.value : payAmount
+            );
             payData[pactid].pauseDuration = 0;
             emit LogPaymentMade(pactid, msg.value, msg.sender);
         }
@@ -329,13 +334,10 @@ contract GigPactUpgradeable is
     ) external onlyEmployer(pactid) isEOA {
         // PactData memory pactData_ = pactData[pactid];
         require(payee != address(0));
-        (
-            PactState pactState_,
-            uint stakeAmount_
-        ) = (
-                pactData[pactid].pactState,
-                pactData[pactid].stakeAmount
-            );
+        (PactState pactState_, uint stakeAmount_) = (
+            pactData[pactid].pactState,
+            pactData[pactid].stakeAmount
+        );
         require(stakeAmount_ > 0);
         if (pactState_ >= PactState.FNF_SETTLED) {
             pactState_ = PactState.ENDED;
@@ -410,6 +412,8 @@ contract GigPactUpgradeable is
                 pactData[pactid].payAmount,
                 pactData[pactid].stakeAmount
             );
+        
+        uint refundAmount_;
         if (isEmployeeDelegate[pactid][msg.sender]) {
             pactState_ = PactState.RESIGNED;
         } else if (isEmployerDelegate[pactid][msg.sender]) {
@@ -419,13 +423,22 @@ contract GigPactUpgradeable is
                 (payScheduleDays * 86400);
             if (paymentDue >= stakeAmount_) paymentDue = stakeAmount_;
 
-            uint refundAmount_ = stakeAmount_ - paymentDue;
+            refundAmount_ = stakeAmount_ - paymentDue;
             pactData[pactid].stakeAmount = uint128(paymentDue);
             pactState_ = PactState.TERMINATED;
-            payable(employer).transfer(refundAmount_);
         } else revert("Unauthorized");
         pactData[pactid].pactState = pactState_;
         emit LogStateUpdate(pactid, pactState_, msg.sender);
+
+        address erc20TokenAddress = pactData[pactid].erc20TokenAddress;
+        if(erc20TokenAddress == address(0)){
+            payable(employer).transfer(refundAmount_);
+        } else {
+            IERC20(erc20TokenAddress).transfer(
+                employer,
+                refundAmount_
+            );
+        }
     }
 
     function fNf(bytes32 pactid, uint tokenAmount) external payable {
