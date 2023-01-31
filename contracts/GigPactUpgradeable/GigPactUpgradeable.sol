@@ -48,6 +48,7 @@ contract GigPactUpgradeable is
     mapping(bytes32 => PayData) public payData;
     mapping(bytes32 => mapping(address => bool)) public isEmployeeDelegate;
     mapping(bytes32 => mapping(address => bool)) public isEmployerDelegate;
+    mapping(bytes32 => bytes32) public externalDocumentHash;
 
     function getArbitratrators(
         bytes32 pactid
@@ -89,15 +90,6 @@ contract GigPactUpgradeable is
         _;
     }
 
-    modifier onlyParties(bytes32 pactid) {
-        require(
-            isEmployeeDelegate[pactid][msg.sender] ||
-                isEmployerDelegate[pactid][msg.sender],
-            "only parties"
-        );
-        _;
-    }
-
     modifier isActive(bytes32 pactid) {
         require(pactData[pactid].pactState == PactState.ACTIVE, "not active");
         _;
@@ -108,13 +100,19 @@ contract GigPactUpgradeable is
         _;
     }
 
+    function isParty(bytes32 pactid, address party) public view returns(bool){
+        return isEmployeeDelegate[pactid][party] ||
+                isEmployerDelegate[pactid][party];
+    }
+
     function createPact(
         bytes32 pactName_,
         address employee_,
         address employer_,
         uint32 payScheduleDays_,
         uint128 payAmount_,
-        address erc20TokenAddress_
+        address erc20TokenAddress_,
+        bytes32 externalDocumentHash_
     ) external {
         require(payAmount_ > 0 && pactName_ != 0);
         bytes32 uid = keccak256(
@@ -129,8 +127,11 @@ contract GigPactUpgradeable is
         pactData[uid].employee = employee_;
         pactData[uid].payScheduleDays = payScheduleDays_;
         pactData[uid].employer = employer_;
-        pactData[uid].erc20TokenAddress = erc20TokenAddress_;
+        if(erc20TokenAddress_ != address(0))
+            pactData[uid].erc20TokenAddress = erc20TokenAddress_;
         pactData[uid].payAmount = payAmount_;
+        if(externalDocumentHash_ != 0)
+            externalDocumentHash[uid] = externalDocumentHash_;
         isEmployeeDelegate[uid][employee_] = true;
         isEmployerDelegate[uid][employer_] = true;
         pactsCounter++;
@@ -187,6 +188,7 @@ contract GigPactUpgradeable is
             pactid,
             pactData[pactid],
             signature,
+            externalDocumentHash[pactid],
             signingDate_
         );
         emit LogStateUpdate(pactid, newPactState, msg.sender);

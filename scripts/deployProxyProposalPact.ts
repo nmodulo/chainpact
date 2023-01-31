@@ -11,7 +11,7 @@ let config: ConfigStruct = {
   minOpenParticipationAmount: ethers.utils.parseEther("0.01")
 }
 
-if(["ethereumMainnet", "kovan", "ropsten"].includes(network.name)){
+if(["ethereumMainnet", "kovan", "ropsten", "goerli", "sepolia"].includes(network.name)){
   config.minOpenParticipationAmount = ethers.utils.parseEther("0.001")
 }
 

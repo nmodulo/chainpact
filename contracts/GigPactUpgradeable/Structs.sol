@@ -28,13 +28,13 @@ struct PactData {
     bool arbitratorProposed;
     address employee;
     uint32 payScheduleDays; 
-
     address employer;
-    address erc20TokenAddress;
     uint128 payAmount;
     uint128 stakeAmount;
     address arbitratorProposer;
     Arbitrator[] proposedArbitrators;
+    address erc20TokenAddress;
+    
 }
 
 struct PayData{

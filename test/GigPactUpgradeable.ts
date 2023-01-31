@@ -49,6 +49,7 @@ let defaultValues = {
   employer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
   payScheduleDays: 1,
   payAmount: ethers.utils.parseEther("1"),
+  externalDocumentHash: ethers.utils.sha256(ethers.utils.toUtf8Bytes("Sample text"))
 }
 
 async function createNewPact(
@@ -58,8 +59,9 @@ async function createNewPact(
   employer = defaultValues.employer,
   payScheduleDays = defaultValues.payScheduleDays,
   payAmount = defaultValues.payAmount,
+  externalDocumentHash = defaultValues.externalDocumentHash
 ) {
-  let tx = await (await pact.createPact(ethers.utils.formatBytes32String(pactName), employee, employer, payScheduleDays, payAmount, erc20TokenAddress)).wait()
+  let tx = await (await pact.createPact(ethers.utils.formatBytes32String(pactName), employee, employer, payScheduleDays, payAmount, erc20TokenAddress, externalDocumentHash)).wait()
   let resultingEvent = tx.events && tx.events[0].decode && tx.events[0].decode(tx.events[0].data)
   return { resultingEvent, tx }
 }
@@ -69,6 +71,7 @@ async function createAndSignRandomPact(erc20TokenAddress = "0x000000000000000000
   let { resultingEvent } = await createNewPact(erc20TokenAddress)
   let signingDate = new Date().getTime()
   let pactData = await pact.pactData(resultingEvent.pactid)
+  let extDocHash = await pact.externalDocumentHash(resultingEvent.pactid)
   let messageToSgin = ethers.utils.arrayify(
     await pactSigLib.contractDataHash(
       pactData.pactName,
@@ -77,6 +80,8 @@ async function createAndSignRandomPact(erc20TokenAddress = "0x000000000000000000
       pactData.employer,
       pactData.payScheduleDays,
       pactData.payAmount,
+      pactData.erc20TokenAddress.toLowerCase(),
+      extDocHash,
       signingDate)
   )
   let signature = await employer.signMessage(
@@ -105,6 +110,7 @@ async function deployToDisputePact(suggestedAmt: BigNumberish) {
 
 const [testCreate, testSigning, testPactions, testdispute, testErc] = [true, true, true, true, true]
 
+if(true)
 describe("Gig Pact Test", function () {
 
   this.beforeAll(async () => {
@@ -172,6 +178,8 @@ describe("Gig Pact Test", function () {
         let { resultingEvent } = await createNewPact()
         let signingDate = new Date().getTime()
         let pactData = await pact.pactData(resultingEvent.pactid)
+        let extDocHash = await pact.externalDocumentHash(resultingEvent.pactid)
+        console.log("Bla Bla ", extDocHash, " What i sent ", defaultValues.externalDocumentHash)
         let contractDataHash = await pactSigLib.contractDataHash(
           pactData.pactName.toLowerCase(),
           resultingEvent.pactid,
@@ -179,6 +187,8 @@ describe("Gig Pact Test", function () {
           pactData.employer.toLowerCase(),
           pactData.payScheduleDays,
           pactData.payAmount.toHexString(),
+          pactData.erc20TokenAddress.toLowerCase(),
+          extDocHash,
           signingDate)
         let messageToSign = ethers.utils.arrayify(contractDataHash)
         //Employer Signs first
@@ -205,6 +215,8 @@ describe("Gig Pact Test", function () {
           pactData.employer.toLowerCase(),
           pactData.payScheduleDays,
           pactData.payAmount.toHexString(),
+          pactData.erc20TokenAddress.toLowerCase(),
+          defaultValues.externalDocumentHash,
           signingDate)
         let messageToSign = ethers.utils.arrayify(contractDataHash)
 
@@ -232,6 +244,9 @@ describe("Gig Pact Test", function () {
           pactData.employer.toLowerCase(),
           pactData.payScheduleDays,
           pactData.payAmount.toHexString(),
+          pactData.erc20TokenAddress.toLowerCase(),
+          ethers.constants.HashZero,
+
           signingDate)
         let messageToSign = ethers.utils.arrayify(contractDataHash)
 
@@ -252,6 +267,9 @@ describe("Gig Pact Test", function () {
           pactData.employer.toLowerCase(),
           pactData.payScheduleDays,
           pactData.payAmount.toHexString(),
+          pactData.erc20TokenAddress.toLowerCase(),
+          ethers.constants.HashZero,
+
           signingDate)
         let messageToSign = ethers.utils.arrayify(contractDataHash)
         //Employer Signs first
@@ -510,6 +528,9 @@ describe("Gig Pact Test", function () {
           pactData.employer.toLowerCase(),
           pactData.payScheduleDays,
           pactData.payAmount.toHexString(),
+          pactData.erc20TokenAddress.toLowerCase(),
+          ethers.constants.HashZero,
+
           signingDate)
         let messageToSign = ethers.utils.arrayify(contractDataHash)
         //Employer Signs first

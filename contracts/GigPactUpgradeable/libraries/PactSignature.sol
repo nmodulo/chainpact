@@ -16,6 +16,7 @@ library PactSignature {
         uint payScheduleDays,
         uint payAmount,
         address erc20TokenAddress,
+        bytes32 externalDocumentHash,
         uint256 signingDate_
     ) public pure returns (bytes32) {
         // PactData memory pactData_ = pactData[pactid];
@@ -23,23 +24,25 @@ library PactSignature {
         return
             keccak256(
                 abi.encodePacked(
-                    "ChainPact - Simple Gig pact - I hereby agree with the following ",
+                    "ChainPact - Simple Gig pact - I hereby agree with the following: ",
                     "For this pact named ",
                     pactName,
-                    " Pact ID ",
+                    ", Pact ID ",
                     pactid,
-                    " Employee ",
+                    ", Employee ",
                     employee,
-                    " Employer ",
+                    ", Employer ",
                     employer,
-                    " Pay Schedule in days ",
+                    ", Pay Schedule in days ",
                     payScheduleDays,
-                    " payAmount (parsed) ",
+                    ", payAmount (parsed) ",
                     payAmount,
                     erc20TokenAddress == address(0)? " Native chain currency": " Token Currency ",
-                    " Token address ",
+                    ", Token address ",
                     erc20TokenAddress,
-                    " Signing DateTime ",
+                    ", External Document Hash (SHA256) ",
+                    externalDocumentHash,
+                    ", Signing DateTime ",
                     signingDate_
                 )
             );
@@ -56,6 +59,7 @@ library PactSignature {
         bytes32 pactid,
         PactData storage pactData,
         bytes calldata signature,
+        bytes32 externalDocumentHash,
         uint256 signingDate_
     ) public returns (PactState) {
         PactData memory pactData_ = pactData;
@@ -68,6 +72,7 @@ library PactSignature {
             pactData_.payScheduleDays,
             pactData_.payAmount,
             pactData_.erc20TokenAddress,
+            externalDocumentHash,
             signingDate_
         );
         address signer_ = recoverContractSigner(signature, contractDataHash_);
