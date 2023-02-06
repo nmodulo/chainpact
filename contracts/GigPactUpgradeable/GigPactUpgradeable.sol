@@ -117,10 +117,11 @@ contract GigPactUpgradeable is
         require(payAmount_ > 0 && pactName_ != 0);
         bytes32 uid = keccak256(
             abi.encodePacked(
-                address(this),
                 msg.sender,
                 "chainpact_gigpact",
-                pactsCounter
+                pactsCounter,
+                block.timestamp,
+                blockhash(block.number - 1)
             )
         );
         pactData[uid].pactName = pactName_;
