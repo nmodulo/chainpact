@@ -34,13 +34,14 @@ struct PactData {
     address arbitratorProposer;
     Arbitrator[] proposedArbitrators;
     address erc20TokenAddress;
-    
 }
 
 struct PayData{
     uint40 pauseDuration;
     uint40 pauseResumeTime;
     uint40 lastPayTimeStamp;
+    uint40 lastExternalPayTimeStamp;
+    bool claimExternalPay;
     uint128 lastPayAmount;
     uint128 proposedAmount;
 }

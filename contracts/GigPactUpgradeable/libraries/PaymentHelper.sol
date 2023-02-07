@@ -21,19 +21,22 @@ library PaymentHelper {
 
     function approvePayment(
         PactData storage pactData,
-        PayData storage payData
+        PayData storage payData,
+        uint commissionPercentage_,
+        address commissionSink_
     ) external returns (bool) {
         PactData memory pactData_ = pactData;
         require(pactData_.pactState == PactState.ACTIVE);
         bool result;
         if (pactData_.erc20TokenAddress == address(0)) {
             require(
-                msg.value >= pactData_.payAmount,
+                msg.value >= pactData_.payAmount + (pactData_.payAmount*commissionPercentage_)/100,
                 "Amount less than payAmount"
             );
             payData.lastPayTimeStamp = uint40(block.timestamp);
             payData.lastPayAmount = uint128(msg.value);
             payData.pauseDuration = 0;
+            payable(commissionSink_).transfer((pactData_.payAmount*commissionPercentage_)/100);
             payable(pactData_.employee).transfer(msg.value);
             result = true;
         } else {

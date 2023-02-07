@@ -60,7 +60,9 @@ library PactSignature {
         PactData storage pactData,
         bytes calldata signature,
         bytes32 externalDocumentHash,
-        uint256 signingDate_
+        uint256 signingDate_,
+        uint commissionPercentage,
+        address commissionSink
     ) public returns (PactState) {
         PactData memory pactData_ = pactData;
         require(pactData_.pactState < PactState.ALL_SIGNED, "Already signed");
@@ -80,9 +82,15 @@ library PactSignature {
         PactState newPactState = PactState.EMPLOYER_SIGNED;
         if (msg.sender == pactData_.employer) {
             if (pactData_.erc20TokenAddress == address(0)) {
-                require(msg.value >= pactData_.payAmount, "Less Stake");
-                pactData.stakeAmount = uint128(msg.value);
+                require(msg.value >= pactData_.payAmount + (pactData_.payAmount*commissionPercentage)/100, "Less Stake");
+                pactData.stakeAmount = uint128(msg.value - (pactData_.payAmount*commissionPercentage)/100);
+                require(payable(commissionSink).send((pactData_.payAmount*commissionPercentage)/100));
             } else {
+                require(IERC20(pactData_.erc20TokenAddress).transferFrom(
+                    msg.sender,
+                    commissionSink,
+                    (pactData_.payAmount * commissionPercentage)/100
+                ));
                 bool result = IERC20(pactData_.erc20TokenAddress).transferFrom(
                     msg.sender,
                     address(this),

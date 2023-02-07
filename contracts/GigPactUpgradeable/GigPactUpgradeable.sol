@@ -20,13 +20,14 @@ contract GigPactUpgradeable is
     ///@dev required by the OZ UUPS module
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    function initialize() public initializer {
+    function initialize(uint commissionPercentage_, address commissionSink_) public initializer {
         ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
+        commissionPercentage = commissionPercentage_;
+        commissionSink = commissionSink_;
         __Ownable_init();
     }
 
     //Events
-
     event LogPaymentMade(
         bytes32 indexed pactid,
         uint value,
@@ -49,29 +50,14 @@ contract GigPactUpgradeable is
     mapping(bytes32 => mapping(address => bool)) public isEmployeeDelegate;
     mapping(bytes32 => mapping(address => bool)) public isEmployerDelegate;
     mapping(bytes32 => bytes32) public externalDocumentHash;
+    uint private commissionPercentage;  //
+    address private commissionSink;
 
     function getArbitratrators(
         bytes32 pactid
     ) external view returns (Arbitrator[] memory) {
         return pactData[pactid].proposedArbitrators;
     }
-
-    // function getAllPactData(
-    //     bytes32 pactid
-    // )
-    //     external
-    //     view
-    //     returns (PactData memory pactData_, PayData memory payData_, Arbitrator[] memory arbitrators_)
-    // {
-    //     pactData_ = pactData[pactid];
-    //     payData_ = payData[pactid];
-
-    //     return (
-    //         pactData_,
-    //         payData_,
-    //         pactData_.proposedArbitrators
-    //     );
-    // }
 
     //modifiers
     modifier onlyEmployer(bytes32 pactid) {
@@ -139,47 +125,6 @@ contract GigPactUpgradeable is
         emit LogPactCreated(msg.sender, uid);
     }
 
-
-
-    // function signPact(
-    //     bytes32 pactid,
-    //     bytes calldata signature,
-    //     uint256 signingDate_
-    // ) external payable {
-    //     PactData memory pactData_ = pactData[pactid];
-    //     require(pactData_.pactState < PactState.ALL_SIGNED, "Already signed");
-    //     bytes32 contractDataHash_ = PactSignature.contractDataHash(
-    //         pactData_.pactName,
-    //         pactid,
-    //         pactData_.employee,
-    //         pactData_.employer,
-    //         pactData_.payScheduleDays,
-    //         pactData_.payAmount,
-    //         signingDate_
-    //     );
-    //     address signer_ = PactSignature.recoverContractSigner(
-    //         signature,
-    //         contractDataHash_
-    //     );
-
-    //     PactState newPactState = PactState.EMPLOYER_SIGNED;
-    //     if (msg.sender == pactData_.employer) {
-    //         require(msg.value >= pactData_.payAmount, "Less Stake");
-    //         require(signer_ == pactData_.employer, "Incorrect signature");
-    //         pactData[pactid].stakeAmount = uint128(msg.value);
-    //     } else if (msg.sender == pactData_.employee) {
-    //         require(signer_ == pactData_.employee, "Incorrect signature");
-    //         newPactState = PactState.EMPLOYEE_SIGNED;
-    //         pactData[pactid].employeeSignDate = uint40(signingDate_);
-    //     } else revert("Unauthorized");
-
-    //     if (pactData_.pactState >= PactState.EMPLOYER_SIGNED) {
-    //         newPactState = PactState.ALL_SIGNED;
-    //     }
-    //     pactData[pactid].pactState = newPactState;
-    //     emit LogStateUpdate(pactid, newPactState, msg.sender);
-    // }
-
     function signPact(
         bytes32 pactid,
         bytes calldata signature,
@@ -190,7 +135,9 @@ contract GigPactUpgradeable is
             pactData[pactid],
             signature,
             externalDocumentHash[pactid],
-            signingDate_
+            signingDate_,
+            commissionPercentage,
+            commissionSink
         );
         emit LogStateUpdate(pactid, newPactState, msg.sender);
     }
@@ -252,6 +199,19 @@ contract GigPactUpgradeable is
         emit LogStateUpdate(pactid, updatedState_, msg.sender);
     }
 
+    function addExternalPayClaim (bytes32 pactid, uint payTime, bool confirm) external isActive(pactid){
+        if(isEmployerDelegate[pactid][msg.sender]){
+            payData[pactid].lastExternalPayTimeStamp = uint40(payTime);
+            payData[pactid].claimExternalPay = false;
+        } else if(isEmployeeDelegate[pactid][msg.sender] && confirm){
+            payData[pactid].claimExternalPay = true;
+        }
+    }
+
+    // function externalPayClaim(bytes32 pactid)
+
+
+
     function approvePayment(
         bytes32 pactid
     ) external payable onlyEmployer(pactid) isActive(pactid) {
@@ -276,12 +236,18 @@ contract GigPactUpgradeable is
 
         bool result;
         if (erc20TokenAddress == address(0)) {
-            require(msg.value >= payAmount, "Amount less than payAmount");
-            result = payable(employee).send(msg.value);
-
+            require(msg.value >= payAmount + (payAmount*commissionPercentage)/100, "Amount less than payAmount");
+            require(payable(commissionSink).send((payAmount*commissionPercentage)/100));
+            result = payable(employee).send(msg.value - (payAmount*commissionPercentage)/100);
+            // require(result);
             // result = true;
         } else {
             // IERC20 tokenContract = IERC20(pactData_.erc20TokenAddress);
+            require(IERC20(erc20TokenAddress).transferFrom(
+                msg.sender,
+                commissionSink,
+                (payAmount*commissionPercentage)/100
+            ));
             result = IERC20(erc20TokenAddress).transferFrom(
                 msg.sender,
                 employee,
@@ -291,10 +257,12 @@ contract GigPactUpgradeable is
         if (result) {
             payData[pactid].lastPayTimeStamp = uint40(block.timestamp);
             payData[pactid].lastPayAmount = uint128(
-                erc20TokenAddress == address(0) ? msg.value : payAmount
+                erc20TokenAddress == address(0) ? msg.value - (payAmount*commissionPercentage)/100 : payAmount
             );
             payData[pactid].pauseDuration = 0;
             emit LogPaymentMade(pactid, msg.value, msg.sender);
+        } else {
+            revert();
         }
     }
 
