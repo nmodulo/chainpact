@@ -350,12 +350,14 @@ describe("Gig Pact Test", function () {
         let { resultingEvent } = await createNewPact()
         await expect(pact.delegatePact(resultingEvent.pactid, [thirdParty.address], true)).to.be.revertedWithoutReason()
       })
+
       it("should allow terminating active pact", async function () {
         let { resultingEvent } = await createAndSignRandomPact()
         await pact.startPause(resultingEvent.pactid, true)
         await pact.terminate(resultingEvent.pactid)
         expect((await pact.pactData(resultingEvent.pactid)).pactState).to.eq(PactState.TERMINATED)
       })
+
       it("should not allow terminating non-active part", async function () {
         let { resultingEvent } = await createAndSignRandomPact()
         await expect(pact.terminate(resultingEvent.pactid)).to.be.revertedWith("not active")
@@ -415,6 +417,22 @@ describe("Gig Pact Test", function () {
         let expectedBalance = balanceBefore.add(stakeAmount).sub(receipt.gasUsed.mul(receipt.effectiveGasPrice))
         expect(await employer.getBalance()).to.eq(expectedBalance)
         expect((await pact.pactData(resultingEvent.pactid)).pactState).to.eq(PactState.ENDED)
+      })
+
+      it("should allow claiming external payment", async function(){
+        let { resultingEvent } = await createAndSignRandomPact()
+        await pact.connect(employer).startPause(resultingEvent.pactid, true)
+        let lastExtPayTime = Math.floor(new Date().getTime()/1000)
+
+        await expect(await pact.connect(employer).addExternalPayClaim(resultingEvent.pactid, lastExtPayTime, true)).to.not.be.reverted
+        let payData = await pact.payData(resultingEvent.pactid)
+        expect(payData.claimExternalPay).to.eq(false)
+        expect(payData.lastExternalPayTimeStamp).to.eq(lastExtPayTime)
+
+        expect(await pact.connect(employee).addExternalPayClaim(resultingEvent.pactid, payData.lastExternalPayTimeStamp, true))
+        payData = await pact.payData(resultingEvent.pactid)
+        expect(payData.lastExternalPayTimeStamp).to.eq(lastExtPayTime)
+        expect(payData.claimExternalPay).to.eq(true)
       })
     })
 

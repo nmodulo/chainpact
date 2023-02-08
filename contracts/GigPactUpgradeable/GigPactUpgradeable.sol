@@ -11,16 +11,25 @@ import "./libraries/PactSignature.sol";
 import "./libraries/DisputeHelper.sol";
 import "./libraries/PaymentHelper.sol";
 import "./Structs.sol";
+import "../Interface/ChainPact.sol";
 
 contract GigPactUpgradeable is
     Initializable,
     UUPSUpgradeable,
-    OwnableUpgradeable
+    OwnableUpgradeable,
+    ChainPact
 {
     ///@dev required by the OZ UUPS module
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    function initialize(uint commissionPercentage_, address commissionSink_) public initializer {
+    constructor(){
+        // _disableInitializers();
+    }
+
+    function initialize(
+        uint commissionPercentage_,
+        address commissionSink_
+    ) public initializer {
         ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
         commissionPercentage = commissionPercentage_;
         commissionSink = commissionSink_;
@@ -39,8 +48,6 @@ contract GigPactUpgradeable is
         PactState newState,
         address indexed updater
     );
-    event LogPactCreated(address indexed creator, bytes32 pactid);
-
 
     //Data
 
@@ -50,7 +57,7 @@ contract GigPactUpgradeable is
     mapping(bytes32 => mapping(address => bool)) public isEmployeeDelegate;
     mapping(bytes32 => mapping(address => bool)) public isEmployerDelegate;
     mapping(bytes32 => bytes32) public externalDocumentHash;
-    uint private commissionPercentage;  //
+    uint private commissionPercentage; //
     address private commissionSink;
 
     function getArbitratrators(
@@ -86,9 +93,10 @@ contract GigPactUpgradeable is
         _;
     }
 
-    function isParty(bytes32 pactid, address party) public view returns(bool){
-        return isEmployeeDelegate[pactid][party] ||
-                isEmployerDelegate[pactid][party];
+    function isParty(bytes32 pactid, address party) public view returns (bool) {
+        return
+            isEmployeeDelegate[pactid][party] ||
+            isEmployerDelegate[pactid][party];
     }
 
     function createPact(
@@ -114,10 +122,10 @@ contract GigPactUpgradeable is
         pactData[uid].employee = employee_;
         pactData[uid].payScheduleDays = payScheduleDays_;
         pactData[uid].employer = employer_;
-        if(erc20TokenAddress_ != address(0))
+        if (erc20TokenAddress_ != address(0))
             pactData[uid].erc20TokenAddress = erc20TokenAddress_;
         pactData[uid].payAmount = payAmount_;
-        if(externalDocumentHash_ != 0)
+        if (externalDocumentHash_ != 0)
             externalDocumentHash[uid] = externalDocumentHash_;
         isEmployeeDelegate[uid][employee_] = true;
         isEmployerDelegate[uid][employer_] = true;
@@ -199,18 +207,30 @@ contract GigPactUpgradeable is
         emit LogStateUpdate(pactid, updatedState_, msg.sender);
     }
 
-    function addExternalPayClaim (bytes32 pactid, uint payTime, bool confirm) external isActive(pactid){
-        if(isEmployerDelegate[pactid][msg.sender]){
-            payData[pactid].lastExternalPayTimeStamp = uint40(payTime);
-            payData[pactid].claimExternalPay = false;
-        } else if(isEmployeeDelegate[pactid][msg.sender] && confirm){
-            payData[pactid].claimExternalPay = true;
-        }
+    function addExternalPayClaim(
+        bytes32 pactid,
+        uint payTime,
+        bool confirm
+    ) external isActive(pactid) {
+
+        PaymentHelper.addExternalPayClaim(pactid, payTime, confirm, payData[pactid]);
+
+        // uint lastExtPayTime = payData[pactid].lastExternalPayTimeStamp;
+        // bool existingClaim = payData[pactid].claimExternalPay;
+        // if (isEmployerDelegate[pactid][msg.sender]) {
+        //     if (existingClaim || lastExtPayTime == 0) {
+        //         payData[pactid].lastExternalPayTimeStamp = uint40(payTime);
+        //         if(existingClaim) payData[pactid].claimExternalPay = false;
+        //     }
+        // } else if (isEmployeeDelegate[pactid][msg.sender]) {
+        //     if(!existingClaim && payTime != 0 && payTime == lastExtPayTime){
+        //         if (confirm) payData[pactid].claimExternalPay = true;
+        //         else delete payData[pactid].lastExternalPayTimeStamp;
+        //     }
+        // }
     }
 
     // function externalPayClaim(bytes32 pactid)
-
-
 
     function approvePayment(
         bytes32 pactid
@@ -236,18 +256,30 @@ contract GigPactUpgradeable is
 
         bool result;
         if (erc20TokenAddress == address(0)) {
-            require(msg.value >= payAmount + (payAmount*commissionPercentage)/100, "Amount less than payAmount");
-            require(payable(commissionSink).send((payAmount*commissionPercentage)/100));
-            result = payable(employee).send(msg.value - (payAmount*commissionPercentage)/100);
+            require(
+                msg.value >=
+                    payAmount + (payAmount * commissionPercentage) / 100,
+                "Amount less than payAmount"
+            );
+            require(
+                payable(commissionSink).send(
+                    (payAmount * commissionPercentage) / 100
+                )
+            );
+            result = payable(employee).send(
+                msg.value - (payAmount * commissionPercentage) / 100
+            );
             // require(result);
             // result = true;
         } else {
             // IERC20 tokenContract = IERC20(pactData_.erc20TokenAddress);
-            require(IERC20(erc20TokenAddress).transferFrom(
-                msg.sender,
-                commissionSink,
-                (payAmount*commissionPercentage)/100
-            ));
+            require(
+                IERC20(erc20TokenAddress).transferFrom(
+                    msg.sender,
+                    commissionSink,
+                    (payAmount * commissionPercentage) / 100
+                )
+            );
             result = IERC20(erc20TokenAddress).transferFrom(
                 msg.sender,
                 employee,
@@ -257,7 +289,9 @@ contract GigPactUpgradeable is
         if (result) {
             payData[pactid].lastPayTimeStamp = uint40(block.timestamp);
             payData[pactid].lastPayAmount = uint128(
-                erc20TokenAddress == address(0) ? msg.value - (payAmount*commissionPercentage)/100 : payAmount
+                erc20TokenAddress == address(0)
+                    ? msg.value - (payAmount * commissionPercentage) / 100
+                    : payAmount
             );
             payData[pactid].pauseDuration = 0;
             emit LogPaymentMade(pactid, msg.value, msg.sender);
@@ -319,6 +353,9 @@ contract GigPactUpgradeable is
         bool result;
 
         pactData[pactid].stakeAmount = 0;
+        pactData[pactid].pactState = pactState_;
+        emit LogStateUpdate(pactid, pactState_, msg.sender);
+
         if (pactData[pactid].erc20TokenAddress == address(0)) {
             result = payee.send(stakeAmount_);
         } else {
@@ -327,10 +364,7 @@ contract GigPactUpgradeable is
                 stakeAmount_
             );
         }
-        if (result) {
-            pactData[pactid].pactState = pactState_;
-            emit LogStateUpdate(pactid, pactState_, msg.sender);
-        }
+        if(!result) revert();
     }
 
     // function approvePayment(
@@ -383,8 +417,8 @@ contract GigPactUpgradeable is
                 pactData[pactid].payAmount,
                 pactData[pactid].stakeAmount
             );
-        
-        uint refundAmount_;
+
+        uint refundAmount_ = 0;
         if (isEmployeeDelegate[pactid][msg.sender]) {
             pactState_ = PactState.RESIGNED;
         } else if (isEmployerDelegate[pactid][msg.sender]) {
@@ -402,19 +436,15 @@ contract GigPactUpgradeable is
         emit LogStateUpdate(pactid, pactState_, msg.sender);
 
         address erc20TokenAddress = pactData[pactid].erc20TokenAddress;
-        if(erc20TokenAddress == address(0)){
+        if (erc20TokenAddress == address(0)) {
             payable(employer).transfer(refundAmount_);
         } else {
-            IERC20(erc20TokenAddress).transfer(
-                employer,
-                refundAmount_
-            );
+            require(IERC20(erc20TokenAddress).transfer(employer, refundAmount_));
         }
     }
 
     function fNf(bytes32 pactid, uint tokenAmount) external payable {
         PaymentHelper.fNf(
-            address(this),
             pactid,
             tokenAmount,
             pactData[pactid],
@@ -483,7 +513,6 @@ contract GigPactUpgradeable is
 
     function dispute(bytes32 pactid, uint suggestedAmountClaim) external {
         DisputeHelper.dispute(
-            address(this),
             pactid,
             pactData[pactid],
             payData[pactid],
@@ -518,7 +547,6 @@ contract GigPactUpgradeable is
         address[] calldata proposedArbitrators_
     ) external {
         DisputeHelper.proposeArbitrators(
-            address(this),
             pactid,
             pactData[pactid],
             proposedArbitrators_
@@ -530,7 +558,6 @@ contract GigPactUpgradeable is
         bool acceptOrReject
     ) external {
         DisputeHelper.acceptOrRejectArbitrators(
-            address(this),
             pactid,
             pactData[pactid],
             acceptOrReject

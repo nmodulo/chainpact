@@ -43,8 +43,12 @@ contract WordPactUpgradeable is
     ///@dev required by the OZ UUPS module
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
+    constructor(){
+        _disableInitializers();
+    }
     function initialize() public initializer {
         ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
+
         __Ownable_init();
     }
 
@@ -145,7 +149,6 @@ contract WordPactUpgradeable is
             if (signatory == signatories_[i].addr) {
                 if(signatories_[i].hasSigned) revert ("Already signed");
                 pactData[pactid].signatories[i].hasSigned = true;
-                allSigned = allSigned && true;
             } else {
                 allSigned = allSigned && signatories_[i].hasSigned;
             }

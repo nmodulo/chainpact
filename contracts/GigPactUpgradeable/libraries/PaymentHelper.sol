@@ -19,6 +19,29 @@ library PaymentHelper {
         address indexed updater
     );
 
+    
+    function addExternalPayClaim(
+        bytes32 pactid,
+        uint payTime,
+        bool confirm,
+        PayData storage payData
+    ) external {
+        uint lastExtPayTime = payData.lastExternalPayTimeStamp;
+        bool existingClaim = payData.claimExternalPay;
+        if (GigPactUpgradeable(address(this)).isEmployerDelegate(pactid, msg.sender)) {
+            if (existingClaim || lastExtPayTime == 0) {
+                payData.lastExternalPayTimeStamp = uint40(payTime);
+                if(existingClaim) payData.claimExternalPay = false;
+            }
+        } else if (GigPactUpgradeable(address(this)).isEmployeeDelegate(pactid, msg.sender)) {
+            if(!existingClaim && payTime != 0 && payTime == lastExtPayTime){
+                if (confirm) payData.claimExternalPay = true;
+                else delete payData.lastExternalPayTimeStamp;
+            }
+        }
+    }
+
+
     function approvePayment(
         PactData storage pactData,
         PayData storage payData,
@@ -57,7 +80,6 @@ library PaymentHelper {
 
     /* Full and Final Settlement FnF can be initiated by both parties in case they owe something.*/
     function fNf(
-        address gigPactAddress,
         bytes32 pactid,
         uint tokenAmount,
         PactData storage pactData,
@@ -73,7 +95,7 @@ library PaymentHelper {
         );
 
         if (
-            GigPactUpgradeable(gigPactAddress).isEmployeeDelegate(
+            GigPactUpgradeable(address(this)).isEmployeeDelegate(
                 pactid,
                 msg.sender
             )
@@ -98,7 +120,7 @@ library PaymentHelper {
                 receiver = pactData.employer;
             }
         } else if (
-            GigPactUpgradeable(gigPactAddress).isEmployerDelegate(
+            GigPactUpgradeable(address(this)).isEmployerDelegate(
                 pactid,
                 msg.sender
             )

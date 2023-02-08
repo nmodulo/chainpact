@@ -1,4 +1,4 @@
-# ChainPact Contracts Repo
+## ChainPact Contracts Repo
 
 ChainPact is a decentralized contracting application built for EVM-based blockchain.
 
@@ -14,3 +14,6 @@ GAS_REPORT=true npx hardhat test
 npx hardhat node
 npx hardhat run scripts/deploy.ts
 ```
+
+
+## Security

@@ -4,7 +4,6 @@ pragma solidity 0.8.16;
 import "../Structs.sol";
 import "../GigPactUpgradeable.sol";
 
-
 library DisputeHelper{
     function add() external pure returns (uint){
         return 2;
@@ -16,13 +15,13 @@ library DisputeHelper{
     );
 
     function dispute(
-        address gigPactAddress,
+        
         bytes32 pactid,
         PactData storage pactData_,
         PayData storage payData_,
         uint suggestedAmountClaim
     ) external {
-        require(GigPactUpgradeable(gigPactAddress).isEmployeeDelegate(pactid, msg.sender), "employee delegate only");
+        require(GigPactUpgradeable(address(this)).isEmployeeDelegate(pactid, msg.sender), "employee delegate only");
         require(pactData_.pactState == PactState.FNF_EMPLOYER);
         pactData_.pactState = PactState.DISPUTED;
         payData_.proposedAmount = uint128(suggestedAmountClaim);
@@ -30,15 +29,15 @@ library DisputeHelper{
     }
 
     function proposeArbitrators(
-        address gigPactAddress,
+        
         bytes32 pactid,
         PactData storage pactData_,
         address[] calldata proposedArbitrators_
     ) external {
         // PactData storage pactData_ = pactData_;
         require(
-            GigPactUpgradeable(gigPactAddress).isEmployeeDelegate(pactid, msg.sender)
-            || GigPactUpgradeable(gigPactAddress).isEmployerDelegate(pactid, msg.sender)
+            GigPactUpgradeable(address(this)).isEmployeeDelegate(pactid, msg.sender)
+            || GigPactUpgradeable(address(this)).isEmployerDelegate(pactid, msg.sender)
             );
         require(!(pactData_.arbitratorAccepted), "Already Accepted");
         require(proposedArbitrators_.length > 0);
@@ -54,32 +53,30 @@ library DisputeHelper{
     }
 
     function acceptOrRejectArbitrators(
-        address gigPactAddress,
+        
         bytes32 pactid,
         PactData storage pactData,
         // PayData memory payData_,
         bool acceptOrReject
-    ) external returns (PactState){
+    ) external {
         PactData memory pactData_ = pactData;
         require(
             pactData_.pactState == PactState.DISPUTED &&
                 pactData_.arbitratorProposed
         );
 
-        if (GigPactUpgradeable(gigPactAddress).isEmployeeDelegate(pactid, pactData_.arbitratorProposer)) {
-            require(GigPactUpgradeable(gigPactAddress).isEmployerDelegate(pactid,msg.sender));
-        } else if(GigPactUpgradeable(gigPactAddress).isEmployerDelegate(pactid, pactData_.arbitratorProposer)) {
-            require(GigPactUpgradeable(gigPactAddress).isEmployeeDelegate(pactid,msg.sender));
+        if (GigPactUpgradeable(address(this)).isEmployeeDelegate(pactid, pactData_.arbitratorProposer)) {
+            require(GigPactUpgradeable(address(this)).isEmployerDelegate(pactid,msg.sender));
+        } else if(GigPactUpgradeable(address(this)).isEmployerDelegate(pactid, pactData_.arbitratorProposer)) {
+            require(GigPactUpgradeable(address(this)).isEmployeeDelegate(pactid,msg.sender));
         } else revert("only parties");
         pactData.arbitratorAccepted = acceptOrReject;
         if (!acceptOrReject) {
             pactData.arbitratorProposed = false;
             delete pactData.proposedArbitrators;
-            return pactData_.pactState;
         } else {
             pactData.pactState = PactState.ARBITRATED;
             emit LogStateUpdate(pactid, PactState.ARBITRATED, msg.sender);
-            return PactState.ARBITRATED;
         }
     }
 

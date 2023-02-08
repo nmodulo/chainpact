@@ -55,6 +55,7 @@ contract ProposalPactUpgradeable is
     UUPSUpgradeable,
     OwnableUpgradeable
 {
+
     event logContribution(bytes32 indexed uid, address payer, uint256 amount);
     event logPactCreated(address indexed creator, bytes32 uid);
     event logvotingConcluded(bytes32 uid);
@@ -75,6 +76,9 @@ contract ProposalPactUpgradeable is
 
     ///@dev required by the OZ UUPS module
     function _authorizeUpgrade(address) internal override onlyOwner {}
+    constructor(){
+        _disableInitializers();
+    }
 
     function isVotingActive(
         VotingInfo memory votingInfo_
@@ -108,7 +112,7 @@ contract ProposalPactUpgradeable is
         );
     }
 
-    function initialize(Config calldata _config) public initializer {
+    function initialize(Config calldata _config) public onlyOwner initializer {
         config = _config;
         ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
         __Ownable_init();
