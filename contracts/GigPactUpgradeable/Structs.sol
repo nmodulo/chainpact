@@ -2,6 +2,7 @@
 pragma solidity 0.8.16;
 
 enum PactState {
+    NULL,
     DEPLOYED,
     RETRACTED,
     EMPLOYER_SIGNED,

@@ -1,8 +1,8 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, upgrades } from "hardhat";
 import { BigNumberish } from "ethers"
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { GigPactUpgradeable, GigPactUpgradeable__factory, PactSignature, PactSignature__factory, DisputeHelper__factory, PaymentHelper__factory, PaymentHelper, IERC20__factory, ERC20__factory, ERC20PresetFixedSupply__factory, ERC20PresetFixedSupply } from "../typechain-types";
+import { GigPactUpgradeable, GigPactUpgradeable__factory, PactSignature, PactSignature__factory, DisputeHelper__factory, PaymentHelper__factory, PaymentHelper, IERC20__factory, ERC20__factory, ERC20PresetFixedSupply__factory, ERC20PresetFixedSupply,} from "../typechain-types";
 import { DisputeHelper } from "../typechain-types/contracts/GigPactUpgradeable/libraries/DisputeHelper";
 import { ERC20, IERC20 } from "../typechain-types/@openzeppelin/contracts/token/ERC20";
 import { erc20 } from "../typechain-types/factories/@openzeppelin/contracts/token";
@@ -141,9 +141,15 @@ describe("Gig Pact Test", function () {
         PaymentHelper: payHelperLib.address
       }
     })
-    pact = await pactFactory.deploy()
+
+    pact = await upgrades.deployProxy(pactFactory, [defaultValues.commissionPercent, thirdParty.address], {
+      unsafeAllowLinkedLibraries: true,
+      initializer: "initialize",
+
+   }) as GigPactUpgradeable
+    // pact = await pactFactory.deploy()
     pact = await pact.deployed()
-    await pact.initialize(2, thirdParty.address)
+    // await pact.initialize(2, thirdParty.address)
     await erc20Contract.approve(pact.address, parseEther("500"))
   })
 

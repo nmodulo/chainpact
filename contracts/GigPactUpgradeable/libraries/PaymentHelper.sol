@@ -19,7 +19,6 @@ library PaymentHelper {
         address indexed updater
     );
 
-    
     function addExternalPayClaim(
         bytes32 pactid,
         uint payTime,
@@ -28,19 +27,28 @@ library PaymentHelper {
     ) external {
         uint lastExtPayTime = payData.lastExternalPayTimeStamp;
         bool existingClaim = payData.claimExternalPay;
-        if (GigPactUpgradeable(address(this)).isEmployerDelegate(pactid, msg.sender)) {
+        if (
+            GigPactUpgradeable(address(this)).isEmployerDelegate(
+                pactid,
+                msg.sender
+            )
+        ) {
             if (existingClaim || lastExtPayTime == 0) {
                 payData.lastExternalPayTimeStamp = uint40(payTime);
-                if(existingClaim) payData.claimExternalPay = false;
+                if (existingClaim) payData.claimExternalPay = false;
             }
-        } else if (GigPactUpgradeable(address(this)).isEmployeeDelegate(pactid, msg.sender)) {
-            if(!existingClaim && payTime != 0 && payTime == lastExtPayTime){
+        } else if (
+            GigPactUpgradeable(address(this)).isEmployeeDelegate(
+                pactid,
+                msg.sender
+            )
+        ) {
+            if (!existingClaim && payTime != 0 && payTime == lastExtPayTime) {
                 if (confirm) payData.claimExternalPay = true;
                 else delete payData.lastExternalPayTimeStamp;
             }
         }
     }
-
 
     function approvePayment(
         PactData storage pactData,
@@ -53,16 +61,22 @@ library PaymentHelper {
         bool result;
         if (pactData_.erc20TokenAddress == address(0)) {
             require(
-                msg.value >= pactData_.payAmount + (pactData_.payAmount*commissionPercentage_)/100,
+                msg.value >=
+                    pactData_.payAmount +
+                        (pactData_.payAmount * commissionPercentage_) /
+                        100,
                 "Amount less than payAmount"
             );
             payData.lastPayTimeStamp = uint40(block.timestamp);
             payData.lastPayAmount = uint128(msg.value);
             payData.pauseDuration = 0;
-            payable(commissionSink_).transfer((pactData_.payAmount*commissionPercentage_)/100);
+            payable(commissionSink_).transfer(
+                (pactData_.payAmount * commissionPercentage_) / 100
+            );
             payable(pactData_.employee).transfer(msg.value);
             result = true;
         } else {
+            require(msg.value == 0);
             result = IERC20(pactData_.erc20TokenAddress).transferFrom(
                 msg.sender,
                 pactData_.employee,
@@ -147,25 +161,26 @@ library PaymentHelper {
             emit LogStateUpdate(pactid, pactState_, msg.sender);
         }
         if (receiver != address(0)) {
-            // emit LogPaymentMade(pactid, msg.value, msg.sender);
-            bool result;
+            emit LogPaymentMade(pactid, msg.value, msg.sender);
+            if (
+                pactState_ == PactState.DISPUTED &&
+                receiver == pactData.employee &&
+                (msg.value >= payData.proposedAmount ||
+                    tokenAmount >= payData.proposedAmount)
+            ) {
+                pactState_ = PactState.FNF_SETTLED;
+            }
             if (tokenAmount == 0) {
-                result = payable(receiver).send(msg.value);
+                require(payable(receiver).send(msg.value));
             } else {
-                result = IERC20(pactData.erc20TokenAddress).transferFrom(
-                    msg.sender,
-                    receiver,
-                    tokenAmount
+                require(msg.value == 0);
+                require(
+                    IERC20(pactData.erc20TokenAddress).transferFrom(
+                        msg.sender,
+                        receiver,
+                        tokenAmount
+                    )
                 );
-                if (
-                    pactState_ == PactState.DISPUTED &&
-                    receiver == pactData.employee &&
-                    result &&
-                    (msg.value >= payData.proposedAmount ||
-                        tokenAmount >= payData.proposedAmount)
-                ) {
-                    pactState_ = PactState.FNF_SETTLED;
-                }
             }
         }
     }

@@ -81,11 +81,13 @@ library PactSignature {
 
         PactState newPactState = PactState.EMPLOYER_SIGNED;
         if (msg.sender == pactData_.employer) {
+            require(signer_ == pactData_.employer, "Incorrect signature");
             if (pactData_.erc20TokenAddress == address(0)) {
                 require(msg.value >= pactData_.payAmount + (pactData_.payAmount*commissionPercentage)/100, "Less Stake");
                 pactData.stakeAmount = uint128(msg.value - (pactData_.payAmount*commissionPercentage)/100);
                 require(payable(commissionSink).send((pactData_.payAmount*commissionPercentage)/100));
             } else {
+                require(msg.value == 0);
                 require(IERC20(pactData_.erc20TokenAddress).transferFrom(
                     msg.sender,
                     commissionSink,
@@ -99,7 +101,6 @@ library PactSignature {
                 require(result, "Token transfer failed");
                 pactData.stakeAmount = pactData.payAmount;
             }
-            require(signer_ == pactData_.employer, "Incorrect signature");
         } else if (msg.sender == pactData_.employee) {
             require(signer_ == pactData_.employee, "Incorrect signature");
             newPactState = PactState.EMPLOYEE_SIGNED;
