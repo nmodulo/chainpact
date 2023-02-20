@@ -55,9 +55,8 @@ contract ProposalPactUpgradeable is
     UUPSUpgradeable,
     OwnableUpgradeable
 {
-
     event logContribution(bytes32 indexed uid, address payer, uint256 amount);
-    event logPactCreated(address indexed creator, bytes32 uid);
+    event LogPactCreated(address indexed creator, bytes32 uid);
     event logvotingConcluded(bytes32 uid);
     event logAmountOut(
         bytes32 indexed uid,
@@ -77,10 +76,21 @@ contract ProposalPactUpgradeable is
     ///@dev required by the OZ UUPS module
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    // constructor(){
-    //     _disableInitializers();
-    // }
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
 
+    function initialize(Config calldata _config) public onlyOwner initializer {
+        config = _config;
+        ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
+        __Ownable_init();
+    }
+
+    /**
+     * Returns an integer based on whether voting isn't enabled (-100), voting is enabled and is yet to start (-1), is currently active as per the voting start time (0), was active and is now over (1)
+     * @param votingInfo_ Votinginfo struct containing core info related to voting
+     */
     function isVotingActive(
         VotingInfo memory votingInfo_
     ) internal view returns (int) {
@@ -99,6 +109,13 @@ contract ProposalPactUpgradeable is
         return 0;
     }
 
+    /**
+     * Get the arrays of different pact parcitipants
+     * @param pactid UID of the pact
+     * @return Array of all allowed voters for a fixed participants, blank for open
+     * @return YesBeneficiaries: array of all the beneficiaries set if YES vote wins
+     * @return NoBeneficiaries: array all the beneficiaries set if NO vote wins
+     */
     function getParticipants(
         bytes32 pactid
     )
@@ -113,12 +130,16 @@ contract ProposalPactUpgradeable is
         );
     }
 
-    function initialize(Config calldata _config) public onlyOwner initializer {
-        config = _config;
-        ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
-        __Ownable_init();
-    }
-
+    /**
+     * Function to create a proposal pact. All of the details are sent at once and only pactText can be edited later, if _isEditable param is set to true in this call.
+     * @param votingInfo_ Full votingInfo for the pact id
+     * @param _isEditable Whether to leave pactText editable
+     * @param groupName Any name of a group created
+     * @param _pactText A string to be used as the core pact text separated by </> for header and description
+     * @param _voters The list of voters for a fixed voters pact, empty otherwise
+     * @param _yesBeneficiaries  List of beneficiaries if YES vote wins
+     * @param _noBeneficiaries List of beneficiaries if NO vote wins
+     */
     function createPact(
         VotingInfo memory votingInfo_,
         bool _isEditable,
@@ -138,11 +159,15 @@ contract ProposalPactUpgradeable is
                 blockhash(block.number - 1)
             )
         );
+
         PactData storage pactData = pacts[uid];
+        require(pactData.creator == address(0), "Already exists");
+        require(bytes(_pactText).length !=0);
         pactData.isEditable = _isEditable;
         pactData.pactText = _pactText;
         pactData.creator = msg.sender;
         pactData.groupName = groupName;
+
         ///@dev voting related checks
         if (votingInfo_.votingEnabled) {
             if (votingInfo_.votingStartTimestamp < block.timestamp) {
@@ -162,7 +187,7 @@ contract ProposalPactUpgradeable is
             } else {
                 require(
                     votingInfo_.duration >=
-                        config_.minOpenParticipationVotingPeriod / 2
+                        config_.minOpenParticipationVotingPeriod / 2    //half the duration of open participation min, because it's a more controlled set of users (supposedly)
                 );
                 if (_voters.length != 0) _addVoters(uid, _voters);
             }
@@ -183,7 +208,7 @@ contract ProposalPactUpgradeable is
         }
 
         pactsCounter++;
-        emit logPactCreated(msg.sender, uid);
+        emit LogPactCreated(msg.sender, uid);
         if (msg.value > 0) {
             pitchIn(uid);
         }
@@ -224,6 +249,8 @@ contract ProposalPactUpgradeable is
     function withDrawContribution(bytes32 pactid, uint amount) external {
         //Checks
         VotingInfo memory votingInfo_ = votingInfo[pactid];
+
+        //Require that either voting hasn't started, or refund is available for all contributors after the vote
         require(
             isVotingActive(votingInfo_) == -1 || pacts[pactid].refundAvailable,
             "Withdraw unavailable"
@@ -242,13 +269,17 @@ contract ProposalPactUpgradeable is
         payable(msg.sender).transfer(amount);
     }
 
+    /**
+     * Function to withdraw beneficiary amount
+     * @param amount Amount that users wishes to withdraw
+     */
     function withdrawGrant(uint amount) external {
         require(grants[msg.sender] >= amount); //Checks
         grants[msg.sender] -= amount; //Effects
         payable(msg.sender).transfer(amount); //Interactions
     }
 
-    /** OP can postpone voting window by 24 hours */
+    /** OP can postpone voting window by 24 hours, before voting starts */
     function postponeVotingWindow(bytes32 pactid) external {
         require(pacts[pactid].creator == msg.sender);
         VotingInfo memory votingInfo_ = votingInfo[pactid];
@@ -260,6 +291,11 @@ contract ProposalPactUpgradeable is
             60;
     }
 
+    /**
+     * Function to let users vote on the proposal
+     * @param _pactid Pact ID
+     * @param _vote The vote - true for YES and false for NO
+     */
     function voteOnPact(bytes32 _pactid, bool _vote) external {
         PactUserInteraction memory userData_ = userInteractionData[_pactid][
             msg.sender
@@ -268,9 +304,6 @@ contract ProposalPactUpgradeable is
         int votingStatus = isVotingActive(votingInfo_);
         if (votingStatus == -1) revert("Voting not started");
         require(votingStatus == 0, "Voting not active");
-        // else if(votingStatus == 1) revert("Voting over");
-        // else if(votingStatus == 100) revert("Voting disabled");
-        // require(isVotingActive(votingInfo_) == 0, "Voting inactive");
         require(userData_.canVote || votingInfo_.openParticipation);
         require(!userData_.hasVoted);
         require(
@@ -290,24 +323,30 @@ contract ProposalPactUpgradeable is
         VotingInfo memory votingInfo_ = votingInfo[pactid];
         require(isVotingActive(votingInfo_) == 1, "Voting not over");
         require(!votingInfo_.votingConcluded);
+
+        //Only one of the voters can call to conclude voting
         if (!votingInfo_.openParticipation) {
             require(userInteractionData[pactid][msg.sender].canVote);
         }
         require(
             userInteractionData[pactid][msg.sender].contribution >=
                 votingInfo_.minContribution
-        );
+        );  //This check is especially useful for OpenParticipation, 
+        //but is applicable for closed participation as well
+
+        votingInfo[pactid].votingConcluded = true;
 
         PactData memory pactData = pacts[pactid];
+
         if (pactData.totalValue == 0) return;
 
-        address[] memory finalBeneficiaries;
+        address[] memory finalBeneficiaries;    //Stores the list of addresses to be sent the final amount to
 
         if (pactData.yesVotes > pactData.noVotes) {
             if (votingInfo_.refundOnVotedYes) {
                 pacts[pactid].refundAvailable = true;
             } else {
-                finalBeneficiaries = pactData.yesBeneficiaries;
+                finalBeneficiaries = pactData.yesBeneficiaries; //Copy yes beneficiaries from storage to memory
             }
         } else if (votingInfo_.refundOnVotedNo) {
             pacts[pactid].refundAvailable = true;
@@ -323,16 +362,24 @@ contract ProposalPactUpgradeable is
                 emit logAmountOut(pactid, finalBeneficiaries[i], amountToSend);
             }
 
-            uint totalValueAfter = pactData.totalValue -
-                finalBeneficiaries.length *
-                amountToSend;
-            if (totalValueAfter > 0) {
-                grants[pactData.creator] += totalValueAfter;
-            }
+            //The following code will return any small leftover amount after sending it to beneficiaries
+            // But given the size of the integer, the leftover amount will be way smaller than the gas cost
+            // of the operation. It will be dealt with later. For now, the balance of the contract itself will
+            // be a bit higher than expected.
+            // uint totalValueAfter = pactData.totalValue -
+            //     finalBeneficiaries.length *
+            //     amountToSend;
+            // if (totalValueAfter > 0) {
+            //     grants[pactData.creator] += totalValueAfter;
+            // }
         }
-        votingInfo[pactid].votingConcluded = true;
     }
 
+    /**
+     * Function to change/set the text of a given pact id
+     * @param pactid Pact UID
+     * @param pactText_ The new text to be set
+     */
     function setText(bytes32 pactid, string calldata pactText_) external {
         require(pacts[pactid].creator == msg.sender);
         require(pacts[pactid].isEditable);

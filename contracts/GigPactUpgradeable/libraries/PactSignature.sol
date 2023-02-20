@@ -20,7 +20,6 @@ library PactSignature {
         uint256 signingDate_
     ) public pure returns (bytes32) {
         // PactData memory pactData_ = pactData[pactid];
-        
         return
             keccak256(
                 abi.encodePacked(

@@ -6,7 +6,6 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-// import "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "./libraries/PactSignature.sol";
 import "./libraries/DisputeHelper.sol";
 import "./libraries/PaymentHelper.sol";
@@ -16,10 +15,10 @@ import "../Interface/ChainPact.sol";
 /**
  * @title ChainPact main logic contract
  * @author Somnath B
- * @notice Still in pre-alpha stage, report issues to chainpact@nmodulo.com
- * 
+ * @notice The main logic contract of Gig pact
+ * @dev Still in pre-alpha stage, report issues to chainpact@nmodulo.com
+ * @dev To be used with OpenZeppelin upgrades plugin
  */
-
 contract GigPactUpgradeable is
     Initializable,
     UUPSUpgradeable,
@@ -29,47 +28,76 @@ contract GigPactUpgradeable is
     ///@dev required by the OZ UUPS module
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
+    ///@custom:oz-upgrades-unsafe-allow constructor
+    ///@dev Disables initialization on the logic contract after deployment, since the proxy contract will not call this constructor
+    constructor() {
+        _disableInitializers();
+    }
+
+    ///@dev Initialize function be used from the delegator/proxy contract only
     function initialize(
         uint commissionPercentage_,
         address commissionSink_
     ) public initializer {
-        ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
         commissionPercentage = commissionPercentage_;
         commissionSink = commissionSink_;
+        ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
         __Ownable_init();
     }
 
-    //Events
+    /**  
+    * @notice Event triggered upon payment from employer to employee
+    * @param pactid The UID for the pact
+    * @param value Value of the payment made
+    * @param payer The wallet making the payment, usually Employer 
+    */
     event LogPaymentMade(
         bytes32 indexed pactid,
         uint value,
         address indexed payer
     );
 
+    /**
+     * @notice Event emitted whenever a change to pactState is made by any party or delegated account
+     * @param pactid The UID of the pact
+     * @param newState The resulting new state
+     * @param updater The account that triggered this change
+     */
     event LogStateUpdate(
         bytes32 indexed pactid,
         PactState newState,
         address indexed updater
     );
 
-    //Data
 
+    /// @dev keeps the count of the pacts, not to be called from outside
     uint private pactsCounter;
+    /// @notice The core pact data mapped to pactId
     mapping(bytes32 => PactData) public pactData;
+    /// @notice The pact pay related data mapped to pactId
     mapping(bytes32 => PayData) public payData;
+    /// @notice Mapping to identify for a given pactId, whether an account is an employee delegatee
     mapping(bytes32 => mapping(address => bool)) public isEmployeeDelegate;
+    /// @notice Mapping to identify for a given pactId, whether an account is an employer delegatee
     mapping(bytes32 => mapping(address => bool)) public isEmployerDelegate;
+    /// @notice Hash of any external document to be added along with pactData
     mapping(bytes32 => bytes32) public externalDocumentHash;
-    uint private commissionPercentage; //
+    /// @dev Commission rate per cent
+    uint private commissionPercentage;
+    /// @dev Address (EOA) of where the commissions are sent to
     address private commissionSink;
 
+    /**
+     * @notice Get the list of arbitrators currently proposed (if any)
+     * @param pactid The UID of the pact
+     */
     function getArbitratrators(
         bytes32 pactid
     ) external view returns (Arbitrator[] memory) {
         return pactData[pactid].proposedArbitrators;
     }
 
-    //modifiers
+    
     modifier onlyEmployer(bytes32 pactid) {
         require(
             isEmployerDelegate[pactid][msg.sender],
@@ -96,11 +124,29 @@ contract GigPactUpgradeable is
         _;
     }
 
+    /**
+     * @notice Function to tell if an account is party to the pact in any way
+     * @param pactid The Pact UID
+     * @param party The address to check
+     */
     function isParty(bytes32 pactid, address party) public view returns (bool) {
         return
             isEmployeeDelegate[pactid][party] ||
             isEmployerDelegate[pactid][party];
     }
+    
+    /**
+     * @notice Function to create a new Gig pact. 
+     * @dev Creates a UID based on the sender's address, pactCounter and block information, deemed unique, however, predictable. 
+     * @dev Should be created by an externally owned address, as some functionality may break if an external contract tries to create and manage pacts.
+     * @param pactName_ Name for this pact
+     * @param employee_ The receiver of payment
+     * @param employer_ The payer
+     * @param payScheduleDays_ The number of days in which the payAmount should be paid
+     * @param payAmount_ The amount to be paid - decimals to be inferrred from erc20TokenAddress
+     * @param erc20TokenAddress_ The token address, if any, or address(0) to use native value
+     * @param externalDocumentHash_ The hash of text of any External Document to be attached to the pact
+     */
 
     function createPact(
         bytes32 pactName_,
@@ -138,6 +184,12 @@ contract GigPactUpgradeable is
         emit LogPactCreated(msg.sender, uid);
     }
 
+    /**
+     * @notice Function to record the signature of the parties for future use
+     * @param pactid The UID for the pact
+     * @param signature The signature coming from the user's wallet, that is a sign on the hash of the pact data
+     * @param signingDate_ The date the msg.sender deems the signature was created using
+     */
     function signPact(
         bytes32 pactid,
         bytes calldata signature,
@@ -155,6 +207,12 @@ contract GigPactUpgradeable is
         emit LogStateUpdate(pactid, newPactState, msg.sender);
     }
 
+    /**
+     * @notice Function to add other EOAs
+     * @param pactid UID of the pact
+     * @param delegates List of addresses to give powers of delegation to, for this pact related actions (not to be confused with delegate in other ERC's)
+     * @param addOrRevoke Either revoke or grant, based on whether this flag is true or false
+     */
     function delegatePact(
         bytes32 pactid,
         address[] calldata delegates,
@@ -174,19 +232,26 @@ contract GigPactUpgradeable is
         }
     }
 
+    /**
+     * @notice Function to start or pause a pact, making it active or Paused
+     * @dev can be used for "start pact" or "pause pact" or "resume pact"
+     * @param pactid Pact UID
+     * @param toStart true for starting, false for pausing
+     */
     function startPause(
         bytes32 pactid,
         bool toStart
     ) external onlyEmployer(pactid) {
         PayData memory payData_ = payData[pactid];
         PactState updatedState_ = pactData[pactid].pactState;
-
         if (toStart) {
             if (updatedState_ == PactState.ALL_SIGNED) {
                 updatedState_ = PactState.ACTIVE;
+                /// @dev Storing the timestamp as now to consider pro-rata payment from this point on
                 payData_.lastPayTimeStamp = uint40(block.timestamp);
                 payData_.lastPayAmount = 0;
             } else if (updatedState_ == PactState.PAUSED) {
+                /// @dev the pause duration gets added up since last pauseResumeTime, considering there could be multiple pauses before a payment is made
                 payData_.pauseDuration +=
                     uint40(block.timestamp) -
                     payData_.pauseResumeTime;
@@ -196,21 +261,34 @@ contract GigPactUpgradeable is
         } else if (pactData[pactid].pactState == PactState.ACTIVE) {
             updatedState_ = PactState.PAUSED;
             payData_.pauseResumeTime = uint40(block.timestamp);
-        } else revert();
+        } else revert();    /// @dev don't allow if the pactState is something else
         payData[pactid] = payData_;
         pactData[pactid].pactState = updatedState_;
         emit LogStateUpdate(pactid, updatedState_, msg.sender);
     }
 
+
+    /**
+     * @notice Function to add a record of an external payment
+     * @dev Doesn't do much, except for adding a record
+     * @param pactid Pact UID
+     * @param payTime The timestamp of claimed payment
+     * @param confirm Whether to confirm (true) or reject (false)
+     */
     function addExternalPayClaim(
         bytes32 pactid,
         uint payTime,
         bool confirm
     ) external isActive(pactid) {
-
         PaymentHelper.addExternalPayClaim(pactid, payTime, confirm, payData[pactid]);
     }
 
+    /**
+     * @notice Function to send payment from employer to employee
+     * @dev The payAmount can be both in ERC20 terms or native value tokens
+     * @dev The payment is sent directly with this, not a pull payment
+     * @param pactid Pact UID
+     */
     function approvePayment(
         bytes32 pactid
     ) external payable onlyEmployer(pactid) isActive(pactid) {
@@ -224,7 +302,7 @@ contract GigPactUpgradeable is
         if (erc20TokenAddress == address(0)) {
             require(
                 msg.value >=
-                    payAmount + (payAmount * commissionPercentage) / 100,
+                    payAmount + (payAmount * commissionPercentage) / 200,   /// @dev Charge half the commission from the employer
                 "Amount less than payAmount"
             );
             require(
@@ -233,10 +311,8 @@ contract GigPactUpgradeable is
                 )
             );
             result = payable(employee).send(
-                msg.value - (payAmount * commissionPercentage) / 100
+                msg.value - (payAmount * commissionPercentage) / 100    /// @dev Effectively cutting another half of commission percent
             );
-            // require(result);
-            // result = true;
         } else {
             // IERC20 tokenContract = IERC20(pactData_.erc20TokenAddress);
             require(
@@ -249,17 +325,16 @@ contract GigPactUpgradeable is
             result = IERC20(erc20TokenAddress).transferFrom(
                 msg.sender,
                 employee,
-                payAmount
+                payAmount - (payAmount * commissionPercentage) / 200
             );
         }
         if (result) {
-            payData[pactid].lastPayTimeStamp = uint40(block.timestamp);
+            payData[pactid].lastPayTimeStamp = uint40(block.timestamp); /// @dev reset the lastPayTimeStamp to consider for pro-rata payments from NOW
             payData[pactid].lastPayAmount = uint128(
                 erc20TokenAddress == address(0)
-                    ? msg.value - (payAmount * commissionPercentage) / 100
-                    : payAmount
+                    ? msg.value : payAmount     /// @dev no option for a "tip" with ERC-20 payments
             );
-            payData[pactid].pauseDuration = 0;
+            payData[pactid].pauseDuration = 0;  /// @dev reset the pause duration for future considerations
             emit LogPaymentMade(pactid, msg.value, msg.sender);
         } else {
             revert();
@@ -324,7 +399,7 @@ contract GigPactUpgradeable is
         if (isEmployeeDelegate[pactid][msg.sender]) {
             pactState_ = PactState.RESIGNED;
         } else if (isEmployerDelegate[pactid][msg.sender]) {
-            // Payment due assumed
+            ///@dev Payment due assumed
             uint paymentDue = (payAmount *
                 (block.timestamp - lastPayTimeStamp - pauseDuration)) /
                 (payScheduleDays * 86400);

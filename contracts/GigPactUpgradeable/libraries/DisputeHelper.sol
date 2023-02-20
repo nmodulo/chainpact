@@ -5,17 +5,21 @@ import "../Structs.sol";
 import "../GigPactUpgradeable.sol";
 
 library DisputeHelper{
-    function add() external pure returns (uint){
-        return 2;
-    }
+
     event LogStateUpdate(
         bytes32 indexed pactid,
         PactState newState,
         address indexed updater
     );
 
+    /**
+     * 
+     * @param pactid Pact UID
+     * @param pactData_ PactData for this pact with storage ref
+     * @param payData_ The payData for this pact, with storage ref
+     * @param suggestedAmountClaim The amount claimed by the  
+     */
     function dispute(
-        
         bytes32 pactid,
         PactData storage pactData_,
         PayData storage payData_,
@@ -29,7 +33,6 @@ library DisputeHelper{
     }
 
     function proposeArbitrators(
-        
         bytes32 pactid,
         PactData storage pactData_,
         address[] calldata proposedArbitrators_
@@ -53,7 +56,6 @@ library DisputeHelper{
     }
 
     function acceptOrRejectArbitrators(
-        
         bytes32 pactid,
         PactData storage pactData,
         // PayData memory payData_,
