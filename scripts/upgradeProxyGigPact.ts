@@ -8,7 +8,7 @@ let deploymentDetails: any = {
 }
 
 let libraries = {
-    PactSignature: "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
+    PactSignature: "0xd1D7C00f3F4A0A4a5539694D1d80075d8d223A48",
     DisputeHelper: "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
     PaymentHelper: "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82"
 }
@@ -25,5 +25,5 @@ async function main() {
     await upgradedContract.deployed()
     console.log("Gig Pact upgraded successfully to ", upgradedContract.address);
 }
-
+    
 main();

@@ -220,6 +220,11 @@
         "internalType": "address",
         "name": "erc20TokenAddress_",
         "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "externalDocumentHash_",
+        "type": "bytes32"
       }
     ],
     "name": "createPact",
@@ -266,6 +271,25 @@
     "name": "dispute",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "externalDocumentHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -373,6 +397,30 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "pactid",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "address",
+        "name": "party",
+        "type": "address"
+      }
+    ],
+    "name": "isParty",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "owner",
     "outputs": [
@@ -436,11 +484,6 @@
         "type": "address"
       },
       {
-        "internalType": "address",
-        "name": "erc20TokenAddress",
-        "type": "address"
-      },
-      {
         "internalType": "uint128",
         "name": "payAmount",
         "type": "uint128"
@@ -453,6 +496,11 @@
       {
         "internalType": "address",
         "name": "arbitratorProposer",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "erc20TokenAddress",
         "type": "address"
       }
     ],

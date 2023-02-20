@@ -32,6 +32,16 @@
         "type": "uint256"
       },
       {
+        "internalType": "address",
+        "name": "erc20TokenAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "externalDocumentHash",
+        "type": "bytes32"
+      },
+      {
         "internalType": "uint256",
         "name": "signingDate_",
         "type": "uint256"

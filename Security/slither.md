@@ -15,6 +15,7 @@
     ```
     slither contracts --solc-args "--base-path . \
         --include-path node_modules/ " --exclude-dependencies --sarif Security/results.sarif
+    ```
 
 ## Known Issues
 
