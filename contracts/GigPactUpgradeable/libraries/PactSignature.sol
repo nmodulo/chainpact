@@ -8,6 +8,12 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../Structs.sol";
 
 library PactSignature {
+    event LogStateUpdate(
+        bytes32 indexed pactid,
+        PactState newState,
+        address indexed updater
+    );
+
     function contractDataHash(
         bytes32 pactName,
         bytes32 pactid,
@@ -62,7 +68,7 @@ library PactSignature {
         uint256 signingDate_,
         uint commissionPercentage,
         address commissionSink
-    ) public returns (PactState) {
+    ) public {
         PactData memory pactData_ = pactData;
         require(pactData_.pactState < PactState.ALL_SIGNED, "Already signed");
         require(signingDate_ > block.timestamp - 5 minutes);
@@ -112,7 +118,6 @@ library PactSignature {
             newPactState = PactState.ALL_SIGNED;
         }
         pactData.pactState = newPactState;
-        return newPactState;
-        // emit LogStateUpdate(pactid, newPactState, msg.sender);
+        emit LogStateUpdate(pactid, newPactState, msg.sender);
     }
 }
