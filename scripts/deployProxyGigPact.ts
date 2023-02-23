@@ -6,6 +6,10 @@ import { DisputeHelper__factory, GigPactUpgradeable__factory, PactSignature__fac
 const BigNumber = ethers.BigNumber
 const deployedFilePath = path.join(__dirname, "deployedContracts.json")
 
+const config = {
+    "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678",
+    "commissionPerCent": 1
+  }
 
 //Deploying to the network chosen through command line
 async function main() {
@@ -70,7 +74,7 @@ async function main() {
          deployedContracts.payHelperLib = {}
      }
  }
- deployedContracts.gigPact[chainId] = { address: gigpactUpgradeable.address }
+ deployedContracts.gigPact[chainId] = { address: gigpactUpgradeable.address, config }
  deployedContracts.pactSignatureLib[chainId] = { address: pactSigLib.address }
  deployedContracts.disputeHelperLib[chainId] = { address: disputeHelperLib.address }
  deployedContracts.payHelperLib[chainId] = { address: payHelperLib.address}
