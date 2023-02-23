@@ -11,14 +11,12 @@ library DisputeHelper{
         PactState newState,
         address indexed updater
     );
+    event LogPactAction(
+        bytes32 indexed pactid,
+        string action
+    );
 
-    /**
-     * 
-     * @param pactid Pact UID
-     * @param pactData_ PactData for this pact with storage ref
-     * @param payData_ The payData for this pact, with storage ref
-     * @param suggestedAmountClaim The amount claimed by the  
-     */
+
     function dispute(
         bytes32 pactid,
         PactData storage pactData_,
@@ -30,6 +28,7 @@ library DisputeHelper{
         pactData_.pactState = PactState.DISPUTED;
         payData_.proposedAmount = uint128(suggestedAmountClaim);
         emit LogStateUpdate(pactid, PactState.DISPUTED, msg.sender);
+        emit LogPactAction(pactid, "DISPUTE");
     }
 
     function proposeArbitrators(
@@ -44,6 +43,7 @@ library DisputeHelper{
             );
         require(!(pactData_.arbitratorAccepted), "Already Accepted");
         require(proposedArbitrators_.length > 0);
+        require(proposedArbitrators_.length <= 30);  /// @dev don't allow too many arbitrators for gas considerations 
         require(pactData_.pactState == PactState.DISPUTED, "Not Disputed");
         pactData_.arbitratorProposer = msg.sender;
         pactData_.arbitratorProposed = true;
@@ -53,6 +53,7 @@ library DisputeHelper{
                 Arbitrator({addr: proposedArbitrators_[i], hasResolved: false})
             );
         }
+        emit LogPactAction(pactid, "PROPOSE_ARBITRATOR" );
     }
 
     function acceptOrRejectArbitrators(
@@ -76,9 +77,11 @@ library DisputeHelper{
         if (!acceptOrReject) {
             pactData.arbitratorProposed = false;
             delete pactData.proposedArbitrators;
+            emit LogPactAction(pactid, "REJECT_ARBITRATOR");
         } else {
             pactData.pactState = PactState.ARBITRATED;
             emit LogStateUpdate(pactid, PactState.ARBITRATED, msg.sender);
+            emit LogPactAction(pactid, "ACCEPT_ARBITRATOR");
         }
     }
 
@@ -106,9 +109,7 @@ library DisputeHelper{
             pactData_.pactState = PactState.DISPUTE_RESOLVED;
             emit LogStateUpdate(pactid, PactState.DISPUTE_RESOLVED, msg.sender);
             // return PactState.DISPUTE_RESOLVED;
-        } else {
-            emit LogStateUpdate(pactid, PactState.DISPUTE_RESOLVED, msg.sender);
-            // return PactState.ARBITRATED;
         }
+        emit LogPactAction(pactid, "ARBITRATOR_RESOLVE");
     }
 }

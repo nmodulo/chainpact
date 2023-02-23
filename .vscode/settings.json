@@ -1,0 +1,6 @@
+{
+    "slither.solcPath": "",
+    "slither.hiddenDetectors": [
+        "arbitrary-send-erc20-permit"
+    ]
+}

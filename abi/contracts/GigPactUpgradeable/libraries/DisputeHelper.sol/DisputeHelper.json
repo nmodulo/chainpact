@@ -10,6 +10,25 @@
       },
       {
         "indexed": false,
+        "internalType": "string",
+        "name": "action",
+        "type": "string"
+      }
+    ],
+    "name": "LogPactAction",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "pactid",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
         "internalType": "enum PactState",
         "name": "newState",
         "type": "uint8"
@@ -23,18 +42,5 @@
     ],
     "name": "LogStateUpdate",
     "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "add",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
   }
 ]

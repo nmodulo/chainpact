@@ -8,7 +8,9 @@ let config: ConfigStruct = {
   maxVotingPeriod: BigNumber.from(180 * 86400),
   minOpenParticipationVotingPeriod: BigNumber.from(12 * 60 * 60),
   groupsContract: "0x0000000000000000000000000000000000000000",
-  minOpenParticipationAmount: ethers.utils.parseEther("0.01")
+  minOpenParticipationAmount: ethers.utils.parseEther("0.01"),
+  commissionPerThousand: 5,
+  commissionSink: "0x2526794f211aBF71F56eAbc54bC1D65B768CB678"
 }
 
 if(["ethereumMainnet", "kovan", "ropsten", "goerli", "sepolia"].includes(network.name)){
