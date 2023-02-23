@@ -1,35 +1,137 @@
 {
-  "proposalPact": {},
+  "proposalPact": {
+    "5": {
+      "address": "0x2f6c844213c9a638C6eFC974b13aceCb001eea2a",
+      "config": {
+        "maxVotingPeriod": "15552000",
+        "minOpenParticipationVotingPeriod": "43200",
+        "groupsContract": "0x0000000000000000000000000000000000000000",
+        "minOpenParticipationAmount": "10000000000000000"
+      }
+    },
+    "97": {
+      "address": "0xB2882c8F33201cC161d0Bf09e65f16E4cf8ce492",
+      "config": {
+        "maxVotingPeriod": "15552000",
+        "minOpenParticipationVotingPeriod": "43200",
+        "groupsContract": "0x0000000000000000000000000000000000000000",
+        "minOpenParticipationAmount": "10000000000000000",
+        "commissionPerThousand": 5,
+        "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678"
+      }
+    },
+    "31337": {
+      "address": "0x922D6956C99E12DFeB3224DEA977D0939758A1Fe",
+      "config": {
+        "maxVotingPeriod": "15552000",
+        "minOpenParticipationVotingPeriod": "43200",
+        "groupsContract": "0x0000000000000000000000000000000000000000",
+        "minOpenParticipationAmount": "10000000000000000",
+        "commissionPerThousand": 5,
+        "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678"
+      }
+    },
+    "43113": {
+      "address": "0x6443b62565b28231494209aA4ECeB6bd650Dd35d",
+      "config": {
+        "maxVotingPeriod": "15552000",
+        "minOpenParticipationVotingPeriod": "43200",
+        "groupsContract": "0x0000000000000000000000000000000000000000",
+        "minOpenParticipationAmount": "10000000000000000",
+        "commissionPerThousand": 5,
+        "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678"
+      }
+    },
+    "80001": {
+      "address": "0xB2882c8F33201cC161d0Bf09e65f16E4cf8ce492",
+      "config": {
+        "maxVotingPeriod": "15552000",
+        "minOpenParticipationVotingPeriod": "43200",
+        "groupsContract": "0x0000000000000000000000000000000000000000",
+        "minOpenParticipationAmount": "10000000000000000",
+        "commissionPerThousand": 5,
+        "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678"
+      }
+    }
+  },
   "gigPact": {
+    "5": {
+      "address": "0xa9Fbe5372669b6297A367D7f799063c10c141b0B"
+    },
+    "97": {
+      "address": "0x36BA5A1509979B4c7b025d810d8CaBA07857654c",
+      "config": {
+        "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678",
+        "commissionPerCent": 1
+      }
+    },
     "31337": {
       "address": "0xB0D4afd8879eD9F52b28595d31B441D079B2Ca07"
     },
     "43113": {
-      "address": "0x2a109B3cF2C2C94f1d4A1f48063BCAe0398FE4e3"
+      "address": "0x477b656FE6901366657D507202E471A9b36eDa97",
+      "config": {
+        "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678",
+        "commissionPerCent": 1
+      }
+    },
+    "80001": {
+      "address": "0x36BA5A1509979B4c7b025d810d8CaBA07857654c",
+      "config": {
+        "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678",
+        "commissionPerCent": 1
+      }
     }
   },
   "pactSignatureLib": {
+    "5": {
+      "address": "0xAf49Ab83ec66A93cf36DE062f1376337C5Db0C5B"
+    },
+    "97": {
+      "address": "0x011488ab68B85c43C458e7C5eA8BaA078bAD32d3"
+    },
     "31337": {
       "address": "0xc351628EB244ec633d5f21fBD6621e1a683B1181"
     },
     "43113": {
-      "address": "0x264Da5a1889eEd21d742f1898334143921060106"
+      "address": "0xEa8A2d4F37f9d808A5d0819ED52936De5cB53aC8"
+    },
+    "80001": {
+      "address": "0x011488ab68B85c43C458e7C5eA8BaA078bAD32d3"
     }
   },
   "disputeHelperLib": {
+    "5": {
+      "address": "0x14D839A3E59F370197B93Bd9f78661cc0D97e63C"
+    },
+    "97": {
+      "address": "0xc9E911a6708D98c838485d2f01ac6cFe5c650Eae"
+    },
     "31337": {
       "address": "0xFD471836031dc5108809D173A067e8486B9047A3"
     },
     "43113": {
-      "address": "0xF4471e44728FEE9eCfB28B52ecd9220ED76cE011"
+      "address": "0x9367B677D3a34fF87dfa58Bc80704e11705480F4"
+    },
+    "80001": {
+      "address": "0xc9E911a6708D98c838485d2f01ac6cFe5c650Eae"
     }
   },
   "payHelperLib": {
+    "5": {
+      "address": "0x740D2156f5d8492800B787bE6bE9e9D7DC895e47"
+    },
+    "97": {
+      "address": "0x082cC69Ab2B76Dc51C22216960772101533284ab"
+    },
     "31337": {
       "address": "0xcbEAF3BDe82155F56486Fb5a1072cb8baAf547cc"
     },
     "43113": {
-      "address": "0xB14E5E44281fC3E665004Ecc7137E0740F137C5d"
+      "address": "0x2DC940C08AcD44E48D5a54EF62c4A74052994f0B"
+    },
+    "80001": {
+      "address": "0x082cC69Ab2B76Dc51C22216960772101533284ab"
     }
   },
   "localUsdc": {}
