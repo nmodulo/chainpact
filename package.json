@@ -21,11 +21,14 @@
     "hardhat-abi-exporter": "^2.10.0",
     "hardhat-gas-reporter": "^1.0.9",
     "solidity-coverage": "^0.8.2",
+    "solc": "0.8.16",
     "ts-node": "^10.9.1",
     "typechain": "^8.1.1",
     "typescript": "^4.9.5"
   },
   "scripts": {
-    "analyze": "slither contracts --solc-args \"--base-path . --include-path node_modules/ \" --exclude-dependencies --sarif Security/results.sarif"
+    "analyze": "slither contracts --solc-args \"--base-path . --include-path node_modules/ \" --exclude-dependencies --sarif Security/results.sarif",
+    "deployPP:local": "hardhat --network local run scripts/deployProxyProposalPact.ts",
+    "deployGP:local": "hardhat --network local run scripts/deployProxyGigPact.ts"
   }
 }

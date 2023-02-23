@@ -28,8 +28,8 @@ contract GigPactUpgradeable is
     ///@dev required by the OZ UUPS module
     function _authorizeUpgrade(address) internal override onlyOwner {}
 
-    ///@custom:oz-upgrades-unsafe-allow constructor
-    ///@dev Disables initialization on the logic contract after deployment, since the proxy contract will not call this constructor
+    /// @dev Disables initialization on the logic contract after deployment, since the proxy contract will not call this constructor
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
@@ -45,12 +45,12 @@ contract GigPactUpgradeable is
         __Ownable_init();
     }
 
-    /**  
-    * @notice Event triggered upon payment from employer to employee
-    * @param pactid The UID for the pact
-    * @param value Value of the payment made
-    * @param payer The wallet making the payment, usually Employer 
-    */
+    /**
+     * @notice Event triggered upon payment from employer to employee
+     * @param pactid The UID for the pact
+     * @param value Value of the payment made
+     * @param payer The wallet making the payment, usually Employer
+     */
     event LogPaymentMade(
         bytes32 indexed pactid,
         uint value,
@@ -69,6 +69,16 @@ contract GigPactUpgradeable is
         address indexed updater
     );
 
+    event LogPactAction(bytes32 indexed pactid);
+
+    //     event LogPactAction2(
+    //     bytes32 indexed pactid,
+    //     string action,
+    //     bytes32[] data
+    // );
+
+    /// @dev for a pausing mechanism
+    bool private _paused;
 
     /// @dev keeps the count of the pacts, not to be called from outside
     uint private pactsCounter;
@@ -97,7 +107,6 @@ contract GigPactUpgradeable is
         return pactData[pactid].proposedArbitrators;
     }
 
-    
     modifier onlyEmployer(bytes32 pactid) {
         require(
             isEmployerDelegate[pactid][msg.sender],
@@ -124,6 +133,16 @@ contract GigPactUpgradeable is
         _;
     }
 
+    modifier whenNotPaused() {
+        require(!_paused);
+        _;
+    }
+
+    /// @dev To be used to pause/unpause in panic
+    function pauseUnpausePanic(bool toPause) external onlyOwner {
+        _paused = toPause;
+    }
+
     /**
      * @notice Function to tell if an account is party to the pact in any way
      * @param pactid The Pact UID
@@ -134,10 +153,10 @@ contract GigPactUpgradeable is
             isEmployeeDelegate[pactid][party] ||
             isEmployerDelegate[pactid][party];
     }
-    
+
     /**
-     * @notice Function to create a new Gig pact. 
-     * @dev Creates a UID based on the sender's address, pactCounter and block information, deemed unique, however, predictable. 
+     * @notice Function to create a new Gig pact.
+     * @dev Creates a UID based on the sender's address, pactCounter and block information, deemed unique, however,     predictable.
      * @dev Should be created by an externally owned address, as some functionality may break if an external contract tries to create and manage pacts.
      * @param pactName_ Name for this pact
      * @param employee_ The receiver of payment
@@ -194,8 +213,8 @@ contract GigPactUpgradeable is
         bytes32 pactid,
         bytes calldata signature,
         uint256 signingDate_
-    ) external payable {
-        PactState newPactState = PactSignature.checkSignPact(
+    ) external payable whenNotPaused {
+        PactSignature.checkSignPact(
             pactid,
             pactData[pactid],
             signature,
@@ -204,7 +223,6 @@ contract GigPactUpgradeable is
             commissionPercentage,
             commissionSink
         );
-        emit LogStateUpdate(pactid, newPactState, msg.sender);
     }
 
     /**
@@ -217,19 +235,23 @@ contract GigPactUpgradeable is
         bytes32 pactid,
         address[] calldata delegates,
         bool addOrRevoke
-    ) external {
+    ) external whenNotPaused {
         require(pactData[pactid].pactState >= PactState.ALL_SIGNED);
         if (msg.sender == pactData[pactid].employer) {
+
             for (uint i = 0; i < delegates.length; i++) {
                 isEmployerDelegate[pactid][delegates[i]] = addOrRevoke;
             }
         } else if (msg.sender == pactData[pactid].employee) {
+
             for (uint i = 0; i < delegates.length; i++) {
                 isEmployeeDelegate[pactid][delegates[i]] = addOrRevoke;
             }
         } else {
             revert();
         }
+        emit LogPactAction(
+            pactid);
     }
 
     /**
@@ -238,7 +260,7 @@ contract GigPactUpgradeable is
      * @param pactid Pact UID
      * @param toStart true for starting, false for pausing
      */
-    function startPause(
+    function startPausePact(
         bytes32 pactid,
         bool toStart
     ) external onlyEmployer(pactid) {
@@ -261,12 +283,11 @@ contract GigPactUpgradeable is
         } else if (pactData[pactid].pactState == PactState.ACTIVE) {
             updatedState_ = PactState.PAUSED;
             payData_.pauseResumeTime = uint40(block.timestamp);
-        } else revert();    /// @dev don't allow if the pactState is something else
+        } else revert(); /// @dev don't allow if the pactState is something else
         payData[pactid] = payData_;
         pactData[pactid].pactState = updatedState_;
         emit LogStateUpdate(pactid, updatedState_, msg.sender);
     }
-
 
     /**
      * @notice Function to add a record of an external payment
@@ -275,13 +296,13 @@ contract GigPactUpgradeable is
      * @param payTime The timestamp of claimed payment
      * @param confirm Whether to confirm (true) or reject (false)
      */
-    function addExternalPayClaim(
-        bytes32 pactid,
-        uint payTime,
-        bool confirm
-    ) external isActive(pactid) {
-        PaymentHelper.addExternalPayClaim(pactid, payTime, confirm, payData[pactid]);
-    }
+    // function uselessAddExternalPayClaim(
+    //     bytes32 pactid,
+    //     uint payTime,
+    //     bool confirm
+    // ) external isActive(pactid) {
+    //     PaymentHelper.addExternalPayClaim(pactid, payTime, confirm, payData[pactid]);
+    // }
 
     /**
      * @notice Function to send payment from employer to employee
@@ -291,7 +312,7 @@ contract GigPactUpgradeable is
      */
     function approvePayment(
         bytes32 pactid
-    ) external payable onlyEmployer(pactid) isActive(pactid) {
+    ) external payable onlyEmployer(pactid) isActive(pactid) whenNotPaused {
         (address employee, uint payAmount, address erc20TokenAddress) = (
             pactData[pactid].employee,
             pactData[pactid].payAmount,
@@ -302,7 +323,7 @@ contract GigPactUpgradeable is
         if (erc20TokenAddress == address(0)) {
             require(
                 msg.value >=
-                    payAmount + (payAmount * commissionPercentage) / 200,   /// @dev Charge half the commission from the employer
+                    payAmount + (payAmount * commissionPercentage) / 200, /// @dev Charge half the commission from the employer
                 "Amount less than payAmount"
             );
             require(
@@ -311,7 +332,7 @@ contract GigPactUpgradeable is
                 )
             );
             result = payable(employee).send(
-                msg.value - (payAmount * commissionPercentage) / 100    /// @dev Effectively cutting another half of commission percent
+                msg.value - (payAmount * commissionPercentage) / 100 /// @dev Effectively cutting another half of commission percent
             );
         } else {
             // IERC20 tokenContract = IERC20(pactData_.erc20TokenAddress);
@@ -331,20 +352,24 @@ contract GigPactUpgradeable is
         if (result) {
             payData[pactid].lastPayTimeStamp = uint40(block.timestamp); /// @dev reset the lastPayTimeStamp to consider for pro-rata payments from NOW
             payData[pactid].lastPayAmount = uint128(
-                erc20TokenAddress == address(0)
-                    ? msg.value : payAmount     /// @dev no option for a "tip" with ERC-20 payments
+                erc20TokenAddress == address(0) ? msg.value : payAmount /// @dev no option for a "tip" with ERC-20 payments, payAmount is sent & recorded
             );
-            payData[pactid].pauseDuration = 0;  /// @dev reset the pause duration for future considerations
+            payData[pactid].pauseDuration = 0; /// @dev reset the pause duration for future considerations
             emit LogPaymentMade(pactid, msg.value, msg.sender);
         } else {
             revert();
         }
     }
 
+    /**
+     * @notice Function to reclaim stake to be used by the employer
+     * @param pactid Pact UID
+     * @param payee The account to transfer the money to
+     */
     function reclaimStake(
         bytes32 pactid,
         address payable payee
-    ) external onlyEmployer(pactid) isEOA {
+    ) external onlyEmployer(pactid) isEOA whenNotPaused {
         // PactData memory pactData_ = pactData[pactid];
         require(payee != address(0));
         (PactState pactState_, uint stakeAmount_) = (
@@ -357,7 +382,6 @@ contract GigPactUpgradeable is
         } else if (pactState_ == PactState.EMPLOYER_SIGNED) {
             pactState_ = PactState.RETRACTED;
         } else revert();
-        // emit LogPaymentMade(pactid, stakeAmount_, address(this));
         bool result;
 
         pactData[pactid].stakeAmount = 0;
@@ -372,9 +396,15 @@ contract GigPactUpgradeable is
                 stakeAmount_
             );
         }
-        if(!result) revert();
+        if (!result) revert();
     }
 
+    /**
+     * @notice Function to initiate termination by either parties and their delegates
+     *          Marks the pact as RESIGNED if initiated by employee or delegates,
+     *          as TERMINATED if initiated by employer or delegates
+     * @param pactid Pact UID
+     */
     function terminate(bytes32 pactid) external isEOA isActive(pactid) {
         // PayData memory payData_ = payData[pactid];
         (uint lastPayTimeStamp, uint pauseDuration) = (
@@ -416,11 +446,21 @@ contract GigPactUpgradeable is
         if (erc20TokenAddress == address(0)) {
             payable(employer).transfer(refundAmount_);
         } else {
-            require(IERC20(erc20TokenAddress).transfer(employer, refundAmount_));
+            require(
+                IERC20(erc20TokenAddress).transfer(employer, refundAmount_)
+            );
         }
     }
 
-    function fNf(bytes32 pactid, uint tokenAmount) external payable {
+    /**
+     * @notice Function to send full and final settlement by either parties
+     * @param pactid Pact UID
+     * @param tokenAmount Amount of tokens, if the payment mode is ERC-20 token/stablecoin
+     */
+    function fNf(
+        bytes32 pactid,
+        uint tokenAmount
+    ) external payable whenNotPaused {
         PaymentHelper.fNf(
             pactid,
             tokenAmount,
@@ -429,6 +469,24 @@ contract GigPactUpgradeable is
         );
     }
 
+    function claimAutoPayAfterDormancy(bytes32 pactid) external {
+        PaymentHelper.claimAutoPayAfterDormancy(
+            pactid,
+            pactData[pactid],
+            payData[pactid],
+            commissionPercentage,
+            commissionSink
+        );
+    }
+
+    /**
+     * @notice Function to raise a dispute by the employee or a delegate. Puts the state of the
+     *  pact into DISPUTED, and assigns a proposed "dispute amount". The hope is that
+     *  the employer will send in this dispute amount and resolve it readily.
+     * @dev the pactData and payData are passed as storage
+     * @param pactid Pact UID
+     * @param suggestedAmountClaim The amount claimed by the
+     */
     function dispute(bytes32 pactid, uint suggestedAmountClaim) external {
         DisputeHelper.dispute(
             pactid,
@@ -438,7 +496,12 @@ contract GigPactUpgradeable is
         );
     }
 
-
+    /**
+     * @notice Function to let third party list of accounts act as dispute arbitrators.
+     *         Can only be called when the pactState is DISPUTED
+     * @param pactid Pact UID
+     * @param proposedArbitrators_ The list of accounts to act as arbitrators who can mark the pact resolved
+     */
     function proposeArbitrators(
         bytes32 pactid,
         address[] calldata proposedArbitrators_
@@ -450,6 +513,11 @@ contract GigPactUpgradeable is
         );
     }
 
+    /**
+     * @notice Function to accept or reject set of arbitrators proposed by the other party
+     * @param pactid Pact UID
+     * @param acceptOrReject Whether to accept (true) or reject (false) the list of accounts as arbitrators, proposed by the other party
+     */
     function acceptOrRejectArbitrators(
         bytes32 pactid,
         bool acceptOrReject
@@ -461,6 +529,10 @@ contract GigPactUpgradeable is
         );
     }
 
+    /**
+     * @notice To be used by all arbitrators to mark the pact as resolved
+     * @param pactid Pact UID
+     */
     function arbitratorResolve(bytes32 pactid) external {
         DisputeHelper.arbitratorResolve(pactid, pactData[pactid]);
     }

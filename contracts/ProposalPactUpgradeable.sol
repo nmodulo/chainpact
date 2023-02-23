@@ -9,13 +9,15 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 struct Config {
     uint32 maxVotingPeriod; //Maximum allowed voting window - for safety
     uint32 minOpenParticipationVotingPeriod; //Min voting period that should be applicable for open participation pacts, so that users don't miss the window
+    uint32 commissionPerThousand;   // Commission rate in per thousand
+    address commissionSink;         // EOA address to send commissions to
     address groupsContract; //Contract address for creating and managing user groups for chainpact
-    uint128 minOpenParticipationAmount; //Minimum contribution amount the open participation should be set to
+    uint128 minOpenParticipationAmount; // Minimum contribution amount the open participation should be set to
 }
 
 ///@dev Struct for storing options related to voting for pacts
 struct VotingInfo {
-    bool votingEnabled; //Whether voting is enabled for a pact
+    bool votingEnabled; /// Whether voting is enabled for a pact
     bool openParticipation; //Whether the voting is open to all
     bool refundOnVotedYes; //Make the refundAvailable flag true if yes > no
     bool refundOnVotedNo; //Make the refundAvailable flag true if no >= yes
@@ -30,7 +32,7 @@ struct PactData {
     uint32 yesVotes; //Count of votes for the motion
     uint32 noVotes; //Count of votes against the motion
     uint128 totalValue; //Total value held against this pact
-    bool refundAvailable;
+    bool refundAvailable;   // Whether refund of all pact's value is available for the rewspective contributors
     bool isEditable; //whether the pactText should be editable
     address creator; //Address of the author of original post
     bytes32 groupName;
@@ -49,21 +51,26 @@ struct PactUserInteraction {
     uint128 contribution;
 }
 
-// UUPSUpgradeable
+/// @title Main upgradeable logic contract for Proposal Pact
+/// @author Somnath B
+/// @notice Contains all the functions related to creation of a pact, collecting and retrieving funds and voting
 contract ProposalPactUpgradeable is
     Initializable,
     UUPSUpgradeable,
     OwnableUpgradeable
 {
-    event logContribution(bytes32 indexed uid, address payer, uint256 amount);
+    event LogContribution(bytes32 indexed uid, address payer, uint256 amount);
     event LogPactCreated(address indexed creator, bytes32 uid);
-    event logvotingConcluded(bytes32 uid);
-    event logAmountOut(
+    event LogvotingConcluded(bytes32 uid);
+    event LogAmountOut(
         bytes32 indexed uid,
         address indexed payee,
         uint256 amount
     );
-    //Data
+    event LogPactAction(bytes32 indexed uid);
+    event LogWithdrawGrant(address indexed beneficiary, uint amount);
+
+
     uint internal pactsCounter; //Stores the number of pacts in this (storage) contract
     Config internal config;
     mapping(bytes32 => PactData) public pacts; //Storing data of all the pacts
@@ -81,7 +88,7 @@ contract ProposalPactUpgradeable is
         _disableInitializers();
     }
 
-    function initialize(Config calldata _config) public onlyOwner initializer {
+    function initialize(Config calldata _config) public initializer {
         config = _config;
         ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
         __Ownable_init();
@@ -189,17 +196,19 @@ contract ProposalPactUpgradeable is
                     votingInfo_.duration >=
                         config_.minOpenParticipationVotingPeriod / 2    //half the duration of open participation min, because it's a more controlled set of users (supposedly)
                 );
-                if (_voters.length != 0) _addVoters(uid, _voters);
+                if (_voters.length != 0 && _voters.length <= 30) _addVoters(uid, _voters);
             }
             require(votingInfo_.duration <= config_.maxVotingPeriod);
 
             votingInfo_.votingConcluded = false;
             if (!votingInfo_.refundOnVotedYes) {
                 require(_yesBeneficiaries.length > 0);
+                require(_yesBeneficiaries.length <= 30);
                 pactData.yesBeneficiaries = _yesBeneficiaries;
             }
             if (!votingInfo_.refundOnVotedNo) {
                 require(_noBeneficiaries.length > 0);
+                require(_noBeneficiaries.length <= 30);
                 pactData.noBeneficiaries = _noBeneficiaries;
             }
             votingInfo[uid] = votingInfo_;
@@ -231,7 +240,9 @@ contract ProposalPactUpgradeable is
         require(isVotingActive(votingInfo_) == -1, "Voting started");
         require(msg.sender == pacts[pactid].creator, "Unauthorized");
         require(!votingInfo_.openParticipation);
+        require(_voters.length <= 100);
         _addVoters(pactid, _voters);
+        emit LogPactAction(pactid);
     }
 
     // /** Function to allow external addresses or participants to add funds */
@@ -242,10 +253,14 @@ contract ProposalPactUpgradeable is
         userInteractionData[pactid][msg.sender].contribution += uint128(
             msg.value
         );
-        emit logContribution(pactid, msg.sender, msg.value);
+        emit LogContribution(pactid, msg.sender, msg.value);
     }
 
-    /** Function to allow users to withdraw their share of contribution from pact id */
+    /**
+     * Function to allow users to withdraw their share of contribution from pact id
+     * @param pactid UID of the pact
+     * @param amount Ammount to withdraw for now
+     */
     function withDrawContribution(bytes32 pactid, uint amount) external {
         //Checks
         VotingInfo memory votingInfo_ = votingInfo[pactid];
@@ -263,23 +278,29 @@ contract ProposalPactUpgradeable is
             contri - amount
         );
         pacts[pactid].totalValue -= uint128(amount);
-        emit logAmountOut(pactid, msg.sender, amount);
+        emit LogAmountOut(pactid, msg.sender, amount);
 
         //Interaction
         payable(msg.sender).transfer(amount);
     }
 
     /**
-     * Function to withdraw beneficiary amount
+     * @notice Function to withdraw beneficiary amount
      * @param amount Amount that users wishes to withdraw
      */
     function withdrawGrant(uint amount) external {
         require(grants[msg.sender] >= amount); //Checks
         grants[msg.sender] -= amount; //Effects
-        payable(msg.sender).transfer(amount); //Interactions
+        uint commission = amount*config.commissionPerThousand/1000;
+        emit LogWithdrawGrant(msg.sender, amount);
+        if(commission != 0) payable(config.commissionSink).transfer(commission);
+        payable(msg.sender).transfer(amount - commission); //Interactions
     }
 
-    /** OP can postpone voting window by 24 hours, before voting starts */
+    /**
+     * @notice Creator can postpone voting window by 24 hours, before voting starts
+     * @param pactid UID of the pact
+     */
     function postponeVotingWindow(bytes32 pactid) external {
         require(pacts[pactid].creator == msg.sender);
         VotingInfo memory votingInfo_ = votingInfo[pactid];
@@ -289,36 +310,42 @@ contract ProposalPactUpgradeable is
             24 *
             60 *
             60;
+        emit LogPactAction(pactid);
     }
 
     /**
      * Function to let users vote on the proposal
-     * @param _pactid Pact ID
+     * @param pactid Pact ID
      * @param _vote The vote - true for YES and false for NO
      */
-    function voteOnPact(bytes32 _pactid, bool _vote) external {
-        PactUserInteraction memory userData_ = userInteractionData[_pactid][
+    function voteOnPact(bytes32 pactid, bool _vote) external {
+        PactUserInteraction memory userData_ = userInteractionData[pactid][
             msg.sender
         ];
-        VotingInfo memory votingInfo_ = votingInfo[_pactid];
+        VotingInfo memory votingInfo_ = votingInfo[pactid];
         int votingStatus = isVotingActive(votingInfo_);
         if (votingStatus == -1) revert("Voting not started");
         require(votingStatus == 0, "Voting not active");
         require(userData_.canVote || votingInfo_.openParticipation);
         require(!userData_.hasVoted);
         require(
-            userData_.contribution >= votingInfo[_pactid].minContribution,
+            userData_.contribution >= votingInfo[pactid].minContribution,
             "Contribution not enough"
         );
         userData_.hasVoted = true;
         userData_.castedVote = _vote;
-        userInteractionData[_pactid][msg.sender] = userData_;
+        userInteractionData[pactid][msg.sender] = userData_;
 
-        if (_vote) pacts[_pactid].yesVotes += 1;
-        else pacts[_pactid].noVotes += 1;
+        if (_vote) pacts[pactid].yesVotes += 1;
+        else pacts[pactid].noVotes += 1;
+        emit LogPactAction(pactid);
     }
 
-    ///@dev Function to disburse amounts after voting. Anyone with voting rights can conclude results and execution
+    /**
+     * @notice Function to disburse amounts after voting. Anyone with voting rights can conclude results and execution
+     * @dev Sets the votingConcluded flag, and adds eligible pay amount to the grants map
+     * @param pactid UID of the pact
+     */
     function concludeVoting(bytes32 pactid) external {
         VotingInfo memory votingInfo_ = votingInfo[pactid];
         require(isVotingActive(votingInfo_) == 1, "Voting not over");
@@ -328,19 +355,21 @@ contract ProposalPactUpgradeable is
         if (!votingInfo_.openParticipation) {
             require(userInteractionData[pactid][msg.sender].canVote);
         }
+
+        //This check is especially useful for OpenParticipation, but is applicable for closed participation as well
         require(
             userInteractionData[pactid][msg.sender].contribution >=
                 votingInfo_.minContribution
-        );  //This check is especially useful for OpenParticipation, 
-        //but is applicable for closed participation as well
+        );  
 
+        //Set the concluded flag
         votingInfo[pactid].votingConcluded = true;
 
         PactData memory pactData = pacts[pactid];
 
-        if (pactData.totalValue == 0) return;
+        if (pactData.totalValue == 0) return;   // Nothing else to do
 
-        address[] memory finalBeneficiaries;    //Stores the list of addresses to be sent the final amount to
+        address[] memory finalBeneficiaries = new address[](0);    // Stores the list of addresses to be sent the final amount to
 
         if (pactData.yesVotes > pactData.noVotes) {
             if (votingInfo_.refundOnVotedYes) {
@@ -359,7 +388,7 @@ contract ProposalPactUpgradeable is
             pacts[pactid].totalValue = 0;
             for (uint i = 0; i < finalBeneficiaries.length; i++) {
                 grants[finalBeneficiaries[i]] += amountToSend;
-                emit logAmountOut(pactid, finalBeneficiaries[i], amountToSend);
+                emit LogAmountOut(pactid, finalBeneficiaries[i], amountToSend);
             }
 
             //The following code will return any small leftover amount after sending it to beneficiaries
@@ -373,6 +402,7 @@ contract ProposalPactUpgradeable is
             //     grants[pactData.creator] += totalValueAfter;
             // }
         }
+        emit LogPactAction(pactid);
     }
 
     /**
@@ -384,5 +414,6 @@ contract ProposalPactUpgradeable is
         require(pacts[pactid].creator == msg.sender);
         require(pacts[pactid].isEditable);
         pacts[pactid].pactText = pactText_;
+        emit LogPactAction(pactid);
     }
 }

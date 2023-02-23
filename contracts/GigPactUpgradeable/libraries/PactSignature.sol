@@ -65,6 +65,8 @@ library PactSignature {
     ) public returns (PactState) {
         PactData memory pactData_ = pactData;
         require(pactData_.pactState < PactState.ALL_SIGNED, "Already signed");
+        require(signingDate_ > block.timestamp - 5 minutes);
+        require(signingDate_ < block.timestamp + 5 minutes);
         bytes32 contractDataHash_ = contractDataHash(
             pactData_.pactName,
             pactid,

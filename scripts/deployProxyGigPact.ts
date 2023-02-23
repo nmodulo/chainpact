@@ -1,6 +1,10 @@
 import { ethers, network, upgrades } from "hardhat";
+import * as fs from 'fs'
+import * as path from 'path'
 import { DisputeHelper__factory, GigPactUpgradeable__factory, PactSignature__factory } from "../typechain-types";
+
 const BigNumber = ethers.BigNumber
+const deployedFilePath = path.join(__dirname, "deployedContracts.json")
 
 
 //Deploying to the network chosen through command line
@@ -32,12 +36,47 @@ async function main() {
  })
 
  console.log("Deploying GigPactUpgradeable contract through upgrades plugin ")
- const gigpactUpgradeable = await upgrades.deployProxy(gigPactFactory, [], {
-    unsafeAllowLinkedLibraries: true
+ const gigpactUpgradeable = await upgrades.deployProxy(gigPactFactory, [1, '0x2526794f211aBF71F56eAbc54bC1D65B768CB678'], {
+    unsafeAllowLinkedLibraries: true,
+    initializer: "initialize",
  });
  await gigpactUpgradeable.deployed()
  console.log("GigPactUpgradeable contract deployed at address ", gigpactUpgradeable.address)
 
+
+ const chainId = ethers.provider.network.chainId
+ let deployedContractsJson: any = undefined
+ try {
+     deployedContractsJson = fs.readFileSync(deployedFilePath)
+ } catch {
+     // console.log("Error reading deployedContracts.json")
+ }
+ let deployedContracts: any = {}
+ if (!deployedContractsJson || deployedContractsJson.length === 0) {
+     deployedContracts = { proposalPact: {}, gigPact: {}, pactSignatureLib: {}, disputeHelperLib: {}, payHelperLib: {}, localUsdc: {} }
+ } else {
+     deployedContracts = JSON.parse(deployedContractsJson)
+
+     if (!deployedContracts.gigPact) {
+         deployedContracts.gigPact = {}
+     }
+     if (!deployedContracts.pactSignatureLib) {
+         deployedContracts.pactSignatureLib = {}
+     }
+     if (!deployedContracts.disputeHelperLib) {
+         deployedContracts.disputeHelperLib = {}
+     }
+     if (!deployedContracts.payHelperLib) {
+         deployedContracts.payHelperLib = {}
+     }
+ }
+ deployedContracts.gigPact[chainId] = { address: gigpactUpgradeable.address }
+ deployedContracts.pactSignatureLib[chainId] = { address: pactSigLib.address }
+ deployedContracts.disputeHelperLib[chainId] = { address: disputeHelperLib.address }
+ deployedContracts.payHelperLib[chainId] = { address: payHelperLib.address}
+ const finalJson = JSON.stringify(deployedContracts, undefined, 2)
+ fs.writeFileSync(deployedFilePath, finalJson)
+ console.log("Deployed to chain ", chainId, "\nWritten to file", deployedFilePath)
 }
 
 main();
