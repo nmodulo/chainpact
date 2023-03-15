@@ -19,79 +19,6 @@ library PaymentHelper {
         address indexed updater
     );
 
-//NOT USED
-    // function addExternalPayClaim(
-    //     bytes32 pactid,
-    //     uint payTime,
-    //     bool confirm,
-    //     PayData storage payData
-    // ) external {
-    //     uint lastExtPayTime = payData.lastExternalPayTimeStamp;
-    //     bool existingClaim = payData.claimExternalPay;
-    //     if (
-    //         GigPactUpgradeable(address(this)).isEmployerDelegate(
-    //             pactid,
-    //             msg.sender
-    //         )
-    //     ) {
-    //         if (existingClaim || lastExtPayTime == 0) {
-    //             payData.lastExternalPayTimeStamp = uint40(payTime);
-    //             if (existingClaim) payData.claimExternalPay = false;
-    //         }
-    //     } else if (
-    //         GigPactUpgradeable(address(this)).isEmployeeDelegate(
-    //             pactid,
-    //             msg.sender
-    //         )
-    //     ) {
-    //         if (!existingClaim && payTime != 0 && payTime == lastExtPayTime) {
-    //             if (confirm) payData.claimExternalPay = true;
-    //             else delete payData.lastExternalPayTimeStamp;
-    //         }
-    //     }
-    // }
-
-    // function approvePayment(
-    //     PactData storage pactData,
-    //     PayData storage payData,
-    //     uint commissionPercentage_,
-    //     address commissionSink_
-    // ) external returns (bool) {
-    //     PactData memory pactData_ = pactData;
-    //     require(pactData_.pactState == PactState.ACTIVE);
-    //     bool result;
-    //     if (pactData_.erc20TokenAddress == address(0)) {
-    //         require(
-    //             msg.value >=
-    //                 pactData_.payAmount +
-    //                     (pactData_.payAmount * commissionPercentage_) /
-    //                     100,
-    //             "Amount less than payAmount"
-    //         );
-    //         payData.lastPayTimeStamp = uint40(block.timestamp);
-    //         payData.lastPayAmount = uint128(msg.value);
-    //         payData.pauseDuration = 0;
-    //         payable(commissionSink_).transfer(
-    //             (pactData_.payAmount * commissionPercentage_) / 100
-    //         );
-    //         payable(pactData_.employee).transfer(msg.value);
-    //         result = true;
-    //     } else {
-    //         require(msg.value == 0);    //Should not send any value for token transfers
-    //         result = IERC20(pactData_.erc20TokenAddress).transferFrom(
-    //             msg.sender,
-    //             pactData_.employee,
-    //             pactData_.payAmount
-    //         );
-    //         if (result) {
-    //             payData.lastPayTimeStamp = uint40(block.timestamp);
-    //             payData.lastPayAmount = uint128(pactData_.payAmount);
-    //             payData.pauseDuration = 0;
-    //         } else revert();
-    //     }
-    //     return result;
-    // }
-
     /**
      * Function to claim the stake amount remaining after employer dormancy for more than twice the paySchedule
      * @param pactid Pact UID
@@ -131,7 +58,7 @@ library PaymentHelper {
     ) external {
         PactState oldPactState_ = pactData.pactState;
         PactState pactState_ = oldPactState_;
-        address receiver = address(0);  // To be used to send funds to, depending on who is sending
+        address receiver;  // To be used to send funds to, depending on who is sending
 
         //Checks
         require(

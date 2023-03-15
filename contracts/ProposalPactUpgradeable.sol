@@ -88,14 +88,14 @@ contract ProposalPactUpgradeable is
         _disableInitializers();
     }
 
-    function initialize(Config calldata _config) public initializer {
-        config = _config;
+    function initialize(Config calldata config_) public initializer {
+        config = config_;
         ///@dev as there is no constructor, we need to initialise the OwnableUpgradeable explicitly
         __Ownable_init();
     }
 
     /**
-     * Returns an integer based on whether voting isn't enabled (-100), voting is enabled and is yet to start (-1), is currently active as per the voting start time (0), was active and is now over (1)
+     * @notice Returns an integer based on whether voting isn't enabled (-100), voting is enabled and is yet to start (-1), is currently active as per the voting start time (0), was active and is now over (1)
      * @param votingInfo_ Votinginfo struct containing core info related to voting
      */
     function isVotingActive(
@@ -117,7 +117,7 @@ contract ProposalPactUpgradeable is
     }
 
     /**
-     * Get the arrays of different pact parcitipants
+     * @notice Get the arrays of different pact parcitipants
      * @param pactid UID of the pact
      * @return Array of all allowed voters for a fixed participants, blank for open
      * @return YesBeneficiaries: array of all the beneficiaries set if YES vote wins
@@ -138,7 +138,7 @@ contract ProposalPactUpgradeable is
     }
 
     /**
-     * Function to create a proposal pact. All of the details are sent at once and only pactText can be edited later, if _isEditable param is set to true in this call.
+     * @notice Function to create a proposal pact. All of the details are sent at once and only pactText can be edited later, if _isEditable param is set to true in this call.
      * @param votingInfo_ Full votingInfo for the pact id
      * @param _isEditable Whether to leave pactText editable
      * @param groupName Any name of a group created
@@ -203,12 +203,12 @@ contract ProposalPactUpgradeable is
             votingInfo_.votingConcluded = false;
             if (!votingInfo_.refundOnVotedYes) {
                 require(_yesBeneficiaries.length > 0);
-                require(_yesBeneficiaries.length <= 30);
+                require(_yesBeneficiaries.length <= 30, "too many");
                 pactData.yesBeneficiaries = _yesBeneficiaries;
             }
             if (!votingInfo_.refundOnVotedNo) {
                 require(_noBeneficiaries.length > 0);
-                require(_noBeneficiaries.length <= 30);
+                require(_noBeneficiaries.length <= 30, "too many");
                 pactData.noBeneficiaries = _noBeneficiaries;
             }
             votingInfo[uid] = votingInfo_;
@@ -232,9 +232,14 @@ contract ProposalPactUpgradeable is
         }
     }
 
-    ///@dev Function to add voters to a pact after its creation
-    //     - Can be performed by OP
-    //     - Can't be performed when voting window is active */
+ 
+    /**
+     * @notice Function to add voters to a pact after its creation
+     * - Can be performed by OP
+     * - Can't be performed when voting window is active
+     * @param pactid Pact UID
+     * @param _voters  set of adresses to add as voters
+     */
     function addVoters(bytes32 pactid, address[] calldata _voters) public {
         VotingInfo memory votingInfo_ = votingInfo[pactid];
         require(isVotingActive(votingInfo_) == -1, "Voting started");
@@ -291,7 +296,7 @@ contract ProposalPactUpgradeable is
     function withdrawGrant(uint amount) external {
         require(grants[msg.sender] >= amount); //Checks
         grants[msg.sender] -= amount; //Effects
-        uint commission = amount*config.commissionPerThousand/1000;
+        uint commission = (amount*config.commissionPerThousand)/1000;
         emit LogWithdrawGrant(msg.sender, amount);
         if(commission != 0) payable(config.commissionSink).transfer(commission);
         payable(msg.sender).transfer(amount - commission); //Interactions
@@ -314,7 +319,7 @@ contract ProposalPactUpgradeable is
     }
 
     /**
-     * Function to let users vote on the proposal
+     * @notice Function to let users vote on the proposal
      * @param pactid Pact ID
      * @param _vote The vote - true for YES and false for NO
      */
