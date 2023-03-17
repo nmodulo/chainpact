@@ -831,15 +831,9 @@ if (true)
           ).to.be.reverted;
         });
 
-        it("should not allow adding arbitrators after arbitrators accepted", async function () {
+        it("should not allow adding arbitrators after arbitrators accepted, blank arbitrators, double accepting arbitrators, or double proposing arbitrators", async function () {
           let suggestedAmt = BigNumber.from(100);
           let { resultingEvent } = await deployToDisputePact(suggestedAmt);
-          await pact
-            .connect(employee)
-            .proposeArbitrators(resultingEvent.pactid, [arbitrator1.address]);
-          await pact
-            .connect(employer)
-            .acceptOrRejectArbitrators(resultingEvent.pactid, true);
 
           resultingEvent = (await deployToDisputePact(suggestedAmt))
             .resultingEvent;
@@ -850,62 +844,76 @@ if (true)
                 .connect(employee)
                 .proposeArbitrators(resultingEvent.pactid, [])
             ).to.be.reverted;
+
+          //Employee proposes
           await expect(
             await pact
               .connect(employee)
               .proposeArbitrators(resultingEvent.pactid, [arbitrator2.address])
           ).to.not.be.reverted;
 
-          let pactData = await pact.pactData(resultingEvent.pacitd)
-          expect((pactData).arbitratorProposer).to.eq(employee.address)
-          expect(pactData.arbitratorProposer).to.be.true
-          //Reject
+          let pactData = await pact.pactData(resultingEvent.pactid)
+          expect(pactData.arbitratorProposer).to.eq(employee.address)
+          expect(pactData.arbitratorProposedFlag).to.be.true
+          
+          //Employer Rejects
           await expect(
             await pact
               .connect(employer)
               .acceptOrRejectArbitrators(resultingEvent.pactid, false)
           ).to.not.be.reverted;
-          
-          
+          pactData = await pact.pactData(resultingEvent.pactid)
+          expect(pactData.arbitratorProposedFlag).to.be.false
+
+          //Third party can't propose
+          await expect(
+            pact
+              .connect(thirdParty)
+              .proposeArbitrators(resultingEvent.pactid, [arbitrator2.address])
+          ).to.be.reverted;
+
+          //Employer proposes
           await expect(
             await pact
-              .connect(employee)
+              .connect(employer)
               .proposeArbitrators(resultingEvent.pactid, [arbitrator2.address])
           ).to.not.be.reverted;
 
           //Same party can't accept
           await expect(
             pact
-              .connect(employee)
+              .connect(employer)
               .acceptOrRejectArbitrators(resultingEvent.pactid, true)
           ).to.be.reverted;
           
+          //Employee accepts
           await expect(
             await pact
-              .connect(employer)
+              .connect(employee)
               .acceptOrRejectArbitrators(resultingEvent.pactid, true)
           ).to.not.be.reverted;
-          pactData = await pact.pactData(resultingEvent.pacitd)
+          pactData = await pact.pactData(resultingEvent.pactid)
           expect(pactData.arbitratorAccepted).to.be.true
 
-          //Already accepted
+          //Can't re-accept
           await expect(
             pact
               .connect(employer)
               .acceptOrRejectArbitrators(resultingEvent.pactid, true)
           ).to.be.reverted;
-
           await expect(
             pact
               .connect(employee)
               .acceptOrRejectArbitrators(resultingEvent.pactid, true)
           ).to.be.reverted;
 
+          //Can't re-propose
           await expect(
             pact
               .connect(employee)
               .proposeArbitrators(resultingEvent.pactid, [arbitrator1.address])
           ).to.be.revertedWith("Already Accepted");
+
           await expect(
             pact
               .connect(employer)
@@ -922,6 +930,11 @@ if (true)
               arbitrator1.address,
               arbitrator2.address,
             ]);
+          
+          // await expect(pact
+          //   .connect(thirdParty)
+          //   .arbitratorResolve(resultingEvent.pactid)).to.be.reverted;
+
           await pact
             .connect(employer)
             .acceptOrRejectArbitrators(resultingEvent.pactid, true);
@@ -983,7 +996,6 @@ if (true)
           expect((await pact.pactData(resultingEvent.pactid)).pactState).to.eq(
             PactState.ENDED
           );
-
           await expect(
             pact.connect(employee).dispute(resultingEvent.pactid, suggestedAmt)
           ).to.be.reverted;
@@ -1010,6 +1022,10 @@ if (true)
               .connect(employee)
               .fNf(resultingEvent.pactid, 0, { value: 100 })
           ).to.not.be.reverted;
+
+          await pact.connect(employer).fNf(resultingEvent.pactid, 0, {value: suggestedAmt})
+          let pactData = await pact.pactData(resultingEvent.pactid)
+          expect(pactData.pactState).to.eq(PactState.DISPUTE_RESOLVED)
         });
       });
 
