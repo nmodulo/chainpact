@@ -89,6 +89,7 @@ library PactSignature {
         PactState newPactState = PactState.EMPLOYER_SIGNED;
         if (msg.sender == pactData_.employer) {
             require(signer_ == pactData_.employer, "Incorrect signature");
+            require(pactData_.pactState != PactState.EMPLOYER_SIGNED );
             if (pactData_.erc20TokenAddress == address(0)) {
                 require(msg.value >= pactData_.payAmount + (pactData_.payAmount*commissionPercentage)/100, "Less Stake");
                 pactData.stakeAmount = uint128(msg.value - (pactData_.payAmount*commissionPercentage)/100);
@@ -110,10 +111,12 @@ library PactSignature {
             }
         } else if (msg.sender == pactData_.employee) {
             require(signer_ == pactData_.employee, "Incorrect signature");
+            require(pactData_.pactState != PactState.EMPLOYEE_SIGNED);
             newPactState = PactState.EMPLOYEE_SIGNED;
             pactData.employeeSignDate = uint40(signingDate_);
         } else revert("Unauthorized");
 
+        //
         if (pactData_.pactState >= PactState.EMPLOYER_SIGNED) {
             newPactState = PactState.ALL_SIGNED;
         }

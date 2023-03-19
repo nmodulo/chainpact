@@ -26,7 +26,7 @@ struct PactData {
     uint40 employeeSignDate;
     PactState pactState;
     bool arbitratorAccepted;
-    bool arbitratorProposed;
+    bool arbitratorProposedFlag;
     address employee;
     uint32 payScheduleDays; 
     address employer;

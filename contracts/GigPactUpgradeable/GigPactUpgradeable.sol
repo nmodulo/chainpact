@@ -320,19 +320,20 @@ contract GigPactUpgradeable is
         );
 
         bool result;
+        uint commissionEitherSide = (payAmount * commissionPercentage) / 200;
         if (erc20TokenAddress == address(0)) {
             require(
                 msg.value >=
-                    payAmount + (payAmount * commissionPercentage) / 200, /// @dev Charge half the commission from the employer
+                    payAmount + commissionEitherSide, /// @dev Charge half the commission from the employer
                 "Amount less than payAmount"
             );
             require(
                 payable(commissionSink).send(
-                    (payAmount * commissionPercentage) / 100
+                    2*commissionEitherSide
                 )
             );
             result = payable(employee).send(
-                msg.value - (payAmount * commissionPercentage) / 100 /// @dev Effectively cutting another half of commission percent
+                msg.value - 2*commissionEitherSide /// @dev Effectively cutting another half of commission percent
             );
         } else {
             // IERC20 tokenContract = IERC20(pactData_.erc20TokenAddress);
@@ -340,22 +341,22 @@ contract GigPactUpgradeable is
                 IERC20(erc20TokenAddress).transferFrom(
                     msg.sender,
                     commissionSink,
-                    (payAmount * commissionPercentage) / 100
+                    2*commissionEitherSide
                 )
             );
             result = IERC20(erc20TokenAddress).transferFrom(
                 msg.sender,
                 employee,
-                payAmount - (payAmount * commissionPercentage) / 200
+                payAmount - commissionEitherSide
             );
         }
         if (result) {
             payData[pactid].lastPayTimeStamp = uint40(block.timestamp); /// @dev reset the lastPayTimeStamp to consider for pro-rata payments from NOW
             payData[pactid].lastPayAmount = uint128(
-                erc20TokenAddress == address(0) ? msg.value : payAmount /// @dev no option for a "tip" with ERC-20 payments, payAmount is sent & recorded
+                erc20TokenAddress == address(0) ? msg.value - commissionEitherSide : payAmount /// @dev no option for a "tip" with ERC-20 payments, payAmount is sent & recorded
             );
             payData[pactid].pauseDuration = 0; /// @dev reset the pause duration for future considerations
-            emit LogPaymentMade(pactid, msg.value, msg.sender);
+            emit LogPaymentMade(pactid, erc20TokenAddress == address(0) ? msg.value - commissionEitherSide : payAmount, msg.sender);
         } else {
             revert();
         }
@@ -429,16 +430,16 @@ contract GigPactUpgradeable is
         if (isEmployeeDelegate[pactid][msg.sender]) {
             pactState_ = PactState.RESIGNED;
         } else if (isEmployerDelegate[pactid][msg.sender]) {
-            ///@dev Payment due assumed
-            uint paymentDue = (payAmount *
-                (block.timestamp - lastPayTimeStamp - pauseDuration)) /
-                (payScheduleDays * 86400);
-            if (paymentDue >= stakeAmount_) paymentDue = stakeAmount_;
-
-            refundAmount_ = stakeAmount_ - paymentDue;
-            pactData[pactid].stakeAmount = uint128(paymentDue);
             pactState_ = PactState.TERMINATED;
         } else revert("Unauthorized");
+
+            ///@dev Payment due assumed
+        uint paymentDue = (payAmount *
+            (block.timestamp - lastPayTimeStamp - pauseDuration)) /
+            (payScheduleDays * 86400);
+        if (paymentDue >= stakeAmount_) paymentDue = stakeAmount_;
+            refundAmount_ = stakeAmount_ - paymentDue;
+            pactData[pactid].stakeAmount = uint128(paymentDue);
         pactData[pactid].pactState = pactState_;
         emit LogStateUpdate(pactid, pactState_, msg.sender);
 

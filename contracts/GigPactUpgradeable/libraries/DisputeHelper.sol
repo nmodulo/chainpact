@@ -46,7 +46,7 @@ library DisputeHelper{
         require(proposedArbitrators_.length <= 30);  /// @dev don't allow too many arbitrators for gas considerations 
         require(pactData_.pactState == PactState.DISPUTED, "Not Disputed");
         pactData_.arbitratorProposer = msg.sender;
-        pactData_.arbitratorProposed = true;
+        pactData_.arbitratorProposedFlag = true;
         delete pactData_.proposedArbitrators;
         for (uint i = 0; i < proposedArbitrators_.length; i++) {
             pactData_.proposedArbitrators.push(
@@ -65,7 +65,7 @@ library DisputeHelper{
         PactData memory pactData_ = pactData;
         require(
             pactData_.pactState == PactState.DISPUTED &&
-                pactData_.arbitratorProposed
+                pactData_.arbitratorProposedFlag
         );
 
         if (GigPactUpgradeable(address(this)).isEmployeeDelegate(pactid, pactData_.arbitratorProposer)) {
@@ -75,7 +75,7 @@ library DisputeHelper{
         } else revert("only parties");
         pactData.arbitratorAccepted = acceptOrReject;
         if (!acceptOrReject) {
-            pactData.arbitratorProposed = false;
+            pactData.arbitratorProposedFlag = false;
             delete pactData.proposedArbitrators;
             emit LogPactAction(pactid, "REJECT_ARBITRATOR");
         } else {
