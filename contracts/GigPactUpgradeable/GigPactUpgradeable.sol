@@ -430,16 +430,16 @@ contract GigPactUpgradeable is
         if (isEmployeeDelegate[pactid][msg.sender]) {
             pactState_ = PactState.RESIGNED;
         } else if (isEmployerDelegate[pactid][msg.sender]) {
-            ///@dev Payment due assumed
-            uint paymentDue = (payAmount *
-                (block.timestamp - lastPayTimeStamp - pauseDuration)) /
-                (payScheduleDays * 86400);
-            if (paymentDue >= stakeAmount_) paymentDue = stakeAmount_;
-
-            refundAmount_ = stakeAmount_ - paymentDue;
-            pactData[pactid].stakeAmount = uint128(paymentDue);
             pactState_ = PactState.TERMINATED;
         } else revert("Unauthorized");
+
+            ///@dev Payment due assumed
+        uint paymentDue = (payAmount *
+            (block.timestamp - lastPayTimeStamp - pauseDuration)) /
+            (payScheduleDays * 86400);
+        if (paymentDue >= stakeAmount_) paymentDue = stakeAmount_;
+            refundAmount_ = stakeAmount_ - paymentDue;
+            pactData[pactid].stakeAmount = uint128(paymentDue);
         pactData[pactid].pactState = pactState_;
         emit LogStateUpdate(pactid, pactState_, msg.sender);
 

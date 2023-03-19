@@ -1199,10 +1199,13 @@ if (true)
         });
       });
 
-
       if (panicPause)
       describe("Panic", function () {
-        it("should not allow criti", async function () {
+        it("should not allow critical operations when paused", async function () {
+
+
+          
+
           // let tokensToLock = parseEther("10");
           // let tokenBalanceBefore = await erc20Contract.balanceOf(
           //   employer.address
