@@ -10,7 +10,7 @@
       }
     },
     "97": {
-      "address": "0xB2882c8F33201cC161d0Bf09e65f16E4cf8ce492",
+      "address": "0xd1D7C00f3F4A0A4a5539694D1d80075d8d223A48",
       "config": {
         "maxVotingPeriod": "15552000",
         "minOpenParticipationVotingPeriod": "43200",
@@ -32,7 +32,7 @@
       }
     },
     "43113": {
-      "address": "0x6443b62565b28231494209aA4ECeB6bd650Dd35d",
+      "address": "0x2C7EB1BCF526768c0D15E374AD7c71D7Aa9644D4",
       "config": {
         "maxVotingPeriod": "15552000",
         "minOpenParticipationVotingPeriod": "43200",
@@ -43,7 +43,7 @@
       }
     },
     "80001": {
-      "address": "0xB2882c8F33201cC161d0Bf09e65f16E4cf8ce492",
+      "address": "0xd1D7C00f3F4A0A4a5539694D1d80075d8d223A48",
       "config": {
         "maxVotingPeriod": "15552000",
         "minOpenParticipationVotingPeriod": "43200",
@@ -59,7 +59,7 @@
       "address": "0xa9Fbe5372669b6297A367D7f799063c10c141b0B"
     },
     "97": {
-      "address": "0x36BA5A1509979B4c7b025d810d8CaBA07857654c",
+      "address": "0x6814CEe6401e6e92F9DAF2d2AB4Ae1603463cA5A",
       "config": {
         "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678",
         "commissionPerCent": 1
@@ -69,14 +69,14 @@
       "address": "0xB0D4afd8879eD9F52b28595d31B441D079B2Ca07"
     },
     "43113": {
-      "address": "0x477b656FE6901366657D507202E471A9b36eDa97",
+      "address": "0x742490d61F0c3919D027D0CE8cDF65A136BEEDBa",
       "config": {
         "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678",
         "commissionPerCent": 1
       }
     },
     "80001": {
-      "address": "0x36BA5A1509979B4c7b025d810d8CaBA07857654c",
+      "address": "0xa4ce7b4024CD0D863823FB7Cd3849e8Aacbd5f97",
       "config": {
         "commissionSink": "0x2526794f211aBF71F56eAbc54bC1D65B768CB678",
         "commissionPerCent": 1
@@ -88,16 +88,16 @@
       "address": "0xAf49Ab83ec66A93cf36DE062f1376337C5Db0C5B"
     },
     "97": {
-      "address": "0x011488ab68B85c43C458e7C5eA8BaA078bAD32d3"
+      "address": "0x66f1296EBFf2fCA9256C3640085da37C981A29FB"
     },
     "31337": {
       "address": "0xc351628EB244ec633d5f21fBD6621e1a683B1181"
     },
     "43113": {
-      "address": "0xEa8A2d4F37f9d808A5d0819ED52936De5cB53aC8"
+      "address": "0x096ef117f209C8e84E7CAE88dC4D902239C850a1"
     },
     "80001": {
-      "address": "0x011488ab68B85c43C458e7C5eA8BaA078bAD32d3"
+      "address": "0xa724C4bb7995C56dAc96c33bF3C813EeefB4b071"
     }
   },
   "disputeHelperLib": {
@@ -105,16 +105,16 @@
       "address": "0x14D839A3E59F370197B93Bd9f78661cc0D97e63C"
     },
     "97": {
-      "address": "0xc9E911a6708D98c838485d2f01ac6cFe5c650Eae"
+      "address": "0x35F6663b718DbBC1d8BFD35e15ecDaE744090A56"
     },
     "31337": {
       "address": "0xFD471836031dc5108809D173A067e8486B9047A3"
     },
     "43113": {
-      "address": "0x9367B677D3a34fF87dfa58Bc80704e11705480F4"
+      "address": "0x565bCCa60BF4905367257513e83dbc72281dAC9F"
     },
     "80001": {
-      "address": "0xc9E911a6708D98c838485d2f01ac6cFe5c650Eae"
+      "address": "0x66f1296EBFf2fCA9256C3640085da37C981A29FB"
     }
   },
   "payHelperLib": {
@@ -122,16 +122,16 @@
       "address": "0x740D2156f5d8492800B787bE6bE9e9D7DC895e47"
     },
     "97": {
-      "address": "0x082cC69Ab2B76Dc51C22216960772101533284ab"
+      "address": "0x31E35e4cC355C274E83Af7E2656266a0079f5bFc"
     },
     "31337": {
       "address": "0xcbEAF3BDe82155F56486Fb5a1072cb8baAf547cc"
     },
     "43113": {
-      "address": "0x2DC940C08AcD44E48D5a54EF62c4A74052994f0B"
+      "address": "0x8229538d59dDaa6bC838fa2eB1138bE4fc3c1255"
     },
     "80001": {
-      "address": "0x082cC69Ab2B76Dc51C22216960772101533284ab"
+      "address": "0x35F6663b718DbBC1d8BFD35e15ecDaE744090A56"
     }
   },
   "localUsdc": {}
