@@ -163,7 +163,8 @@ contract ProposalPactUpgradeable is
                 "chainpact_proposalpact",
                 pactsCounter,
                 block.timestamp,
-                blockhash(block.number - 1)
+                blockhash(block.number - 1),
+                block.chainid
             )
         );
 

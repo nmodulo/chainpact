@@ -183,7 +183,8 @@ contract GigPactUpgradeable is
                 "chainpact_gigpact",
                 pactsCounter,
                 block.timestamp,
-                blockhash(block.number - 1)
+                blockhash(block.number - 1),
+                block.chainid
             )
         );
         require(pactData[uid].pactState == PactState.NULL);
