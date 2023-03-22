@@ -507,7 +507,7 @@
       },
       {
         "internalType": "bool",
-        "name": "arbitratorProposed",
+        "name": "arbitratorProposedFlag",
         "type": "bool"
       },
       {

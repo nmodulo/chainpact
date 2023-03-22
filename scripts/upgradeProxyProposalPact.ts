@@ -1,16 +1,34 @@
 import { ethers, network, upgrades } from "hardhat";
 
-let deploymentDetails: any = {
-    "fuji": { "address": "0xa9Fbe5372669b6297A367D7f799063c10c141b0B" }, 
-    "local": { "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9"}
-}
+import * as fs from 'fs'
+import * as path from 'path'
+const deployedFilePath = path.join(__dirname, "toUpgraded.json")
 
 async function main() {
-    const WordPactV2 = await ethers.getContractFactory("WordPactUpgradeable");
-    console.log("Upgrading WordPact...");
-    let address = deploymentDetails[network.name]
-    await upgrades.upgradeProxy(address, WordPactV2);
-    console.log("WordPact upgraded successfully");
+
+    let deployedContracts: any = {}
+    let deployedContractsJson: any = undefined
+    try {
+        deployedContractsJson = fs.readFileSync(deployedFilePath)
+        if (!deployedContractsJson || deployedContractsJson.length === 0) return
+    
+        deployedContracts = JSON.parse(deployedContractsJson)
+
+    } catch {
+        console.log("Error reading old json")
+        return
+    }
+
+    // console.log((await ethers.provider.getNetwork()).chainId)
+    const chainId = (await ethers.provider.getNetwork()).chainId
+
+    const ProposalPactV2 = await ethers.getContractFactory("ProposalPactUpgradeable");
+    console.log("Upgrading ProposalPact on chainId ", chainId, "...");
+    let address = deployedContracts.proposalPact[chainId].address
+    let upgradedContract = await upgrades.upgradeProxy(address, ProposalPactV2);
+    await upgradedContract.deployed()
+
+    console.log("ProposalPact upgraded successfully on chainId ", chainId);
 }
 
 main();

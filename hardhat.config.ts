@@ -35,7 +35,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.GOERLI_PRIVATE_KEY_0 ?? "0x0"]
     },
     mumbai: {
-      url: "https://rpc-mumbai.maticvigil.com",
+      url: "https://rpc.ankr.com/polygon_mumbai",
       accounts: [process.env.FUJI_PRIVATE_KEY_0 ?? "0x0"]    
     },
     bsctest: {

@@ -395,7 +395,7 @@
           }
         ],
         "internalType": "struct Config",
-        "name": "_config",
+        "name": "config_",
         "type": "tuple"
       }
     ],

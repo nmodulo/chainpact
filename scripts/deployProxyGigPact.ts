@@ -49,6 +49,8 @@ async function main() {
 
 
  const chainId = ethers.provider.network.chainId
+
+ 
  let deployedContractsJson: any = undefined
  try {
      deployedContractsJson = fs.readFileSync(deployedFilePath)
