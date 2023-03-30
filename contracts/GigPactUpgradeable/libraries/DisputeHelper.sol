@@ -12,8 +12,7 @@ library DisputeHelper{
         address indexed updater
     );
     event LogPactAction(
-        bytes32 indexed pactid,
-        string action
+        bytes32 indexed pactid
     );
 
 
@@ -28,7 +27,6 @@ library DisputeHelper{
         pactData_.pactState = PactState.DISPUTED;
         payData_.proposedAmount = uint128(suggestedAmountClaim);
         emit LogStateUpdate(pactid, PactState.DISPUTED, msg.sender);
-        emit LogPactAction(pactid, "DISPUTE");
     }
 
     function proposeArbitrators(
@@ -53,7 +51,7 @@ library DisputeHelper{
                 Arbitrator({addr: proposedArbitrators_[i], hasResolved: false})
             );
         }
-        emit LogPactAction(pactid, "PROPOSE_ARBITRATOR" );
+        emit LogPactAction(pactid);
     }
 
     function acceptOrRejectArbitrators(
@@ -77,11 +75,10 @@ library DisputeHelper{
         if (!acceptOrReject) {
             pactData.arbitratorProposedFlag = false;
             delete pactData.proposedArbitrators;
-            emit LogPactAction(pactid, "REJECT_ARBITRATOR");
+            emit LogPactAction(pactid);
         } else {
             pactData.pactState = PactState.ARBITRATED;
             emit LogStateUpdate(pactid, PactState.ARBITRATED, msg.sender);
-            emit LogPactAction(pactid, "ACCEPT_ARBITRATOR");
         }
     }
 
@@ -110,6 +107,6 @@ library DisputeHelper{
             emit LogStateUpdate(pactid, PactState.DISPUTE_RESOLVED, msg.sender);
             // return PactState.DISPUTE_RESOLVED;
         }
-        emit LogPactAction(pactid, "ARBITRATOR_RESOLVE");
+        emit LogPactAction(pactid);
     }
 }

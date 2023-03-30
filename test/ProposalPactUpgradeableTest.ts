@@ -70,7 +70,10 @@ const [
   testAfterCreation,
   testVotingActive,
   testVotingResults,
-] = [false, false, false, false, false];
+] = 
+
+// [false, false, false, false, false];
+[true, true, true, true, true];
 
 //Helper functions
 // By default creates a pact with refundOnVotedNo, 2 yesBeneficiaries and 3 voters
@@ -168,7 +171,7 @@ describe("ProposalPactUpgradeable", function () {
         };
         let { resultingEvent } = await createNewPact(
           BigNumber.from(0),
-          votingInfo
+          votingInfo,
         );
         expect(resultingEvent.uid).to.have.length(66);
 

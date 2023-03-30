@@ -138,5 +138,26 @@
       "address": "0x35F6663b718DbBC1d8BFD35e15ecDaE744090A56"
     }
   },
-  "localUsdc": {}
+  "localUsdc": {
+    "31337": {
+      "address": "0xdbC43Ba45381e02825b14322cDdd15eC4B3164E6"
+    }
+  },
+  "allGraphQueryUrls": {
+    "5": {
+      "endpoint": "https://api.studio.thegraph.com/query/41653/chaintest/0.3.5"
+    },
+    "97": {
+      "endpoint": "https://api.studio.thegraph.com/query/42254/chainpact-bruno/0.0.6"
+    },
+    "31337": {
+      "endpoint": ""
+    },
+    "43113": {
+      "endpoint": "https://api.studio.thegraph.com/query/42254/chainpact-fuji/0.0.6"
+    },
+    "80001": {
+      "endpoint": "https://api.studio.thegraph.com/query/42254/chainpact-mumbai/0.0.15"
+    }
+  }
 }

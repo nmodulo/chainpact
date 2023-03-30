@@ -21,11 +21,11 @@ async function main() {
     if (!deployedContractsJson || deployedContractsJson.length === 0) return
     const chainId = (await ethers.provider.getNetwork()).chainId
     //Use the existing libraries
-    let libraries = {
-        PactSignature: deployedContracts.pactSignatureLib[chainId].address,
-        DisputeHelper: deployedContracts.disputeHelperLib[chainId].address,
-        PaymentHelper: deployedContracts.payHelperLib[chainId].address,
-    }
+    // let libraries = {
+    //     PactSignature: deployedContracts.pactSignatureLib[chainId].address,
+    //     DisputeHelper: deployedContracts.disputeHelperLib[chainId].address,
+    //     PaymentHelper: deployedContracts.payHelperLib[chainId].address,
+    // }
 
     // //Re-deploy libraries
     // let pactSigFactory: PactSignature__factory = await ethers.getContractFactory("PactSignature")
@@ -34,11 +34,11 @@ async function main() {
     // pactSigLib = await pactSigLib.deployed()
     // console.log("PactSignature library deployed at address ", pactSigLib.address)
    
-    // let disputeHelperFactory = await ethers.getContractFactory("DisputeHelper")
-    // console.log("Deploying DisputeHelper library...")
-    // let disputeHelperLib = await disputeHelperFactory.deploy()
-    // disputeHelperLib = await disputeHelperLib.deployed()
-    // console.log("DisputeHelper library deployed at address ", disputeHelperLib.address)
+    let disputeHelperFactory = await ethers.getContractFactory("DisputeHelper")
+    console.log("Deploying DisputeHelper library...")
+    let disputeHelperLib = await disputeHelperFactory.deploy()
+    disputeHelperLib = await disputeHelperLib.deployed()
+    console.log("DisputeHelper library deployed at address ", disputeHelperLib.address)
    
     // let payHelperFactory = await ethers.getContractFactory("PaymentHelper")
     // console.log("Deploying PaymentHelper library...")
@@ -51,6 +51,13 @@ async function main() {
     //     DisputeHelper: disputeHelperLib.address,
     //     PaymentHelper: payHelperLib.address,
     // }
+
+    let libraries = {
+        PactSignature: deployedContracts.pactSignatureLib[chainId].address,
+        DisputeHelper: disputeHelperLib.address,
+        PaymentHelper: deployedContracts.payHelperLib[chainId].address,
+    }
+
 
     const GigPactV2 = await ethers.getContractFactory("GigPactUpgradeable", {libraries});
     console.log("Upgrading Gig Pact...");
@@ -82,11 +89,11 @@ async function main() {
     }
     deployedContracts.gigPact[chainId] = { address: upgradedContract.address, config: deployedContracts.gigPact[chainId].config }
     // deployedContracts.pactSignatureLib[chainId] = { address: pactSigLib.address }
-    // deployedContracts.disputeHelperLib[chainId] = { address: disputeHelperLib.address }
+    deployedContracts.disputeHelperLib[chainId] = { address: disputeHelperLib.address }
     // deployedContracts.payHelperLib[chainId] = { address: payHelperLib.address}  
 
     deployedContracts.pactSignatureLib[chainId] = { address: libraries.PactSignature }
-    deployedContracts.disputeHelperLib[chainId] = { address: libraries.DisputeHelper}
+    // deployedContracts.disputeHelperLib[chainId] = { address: libraries.DisputeHelper}
     deployedContracts.payHelperLib[chainId] = { address: libraries.PaymentHelper}
     const finalJson = JSON.stringify(deployedContracts, undefined, 2)
     fs.writeFileSync(deployedFilePath, finalJson)
