@@ -9,8 +9,8 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 struct Config {
     uint32 maxVotingPeriod; //Maximum allowed voting window - for safety
     uint32 minOpenParticipationVotingPeriod; //Min voting period that should be applicable for open participation pacts, so that users don't miss the window
-    uint32 commissionPerThousand;   // Commission rate in per thousand
-    address commissionSink;         // EOA address to send commissions to
+    uint32 commissionPerThousand; // Commission rate in per thousand
+    address commissionSink; // EOA address to send commissions to
     address groupsContract; //Contract address for creating and managing user groups for chainpact
     uint128 minOpenParticipationAmount; // Minimum contribution amount the open participation should be set to
 }
@@ -32,7 +32,7 @@ struct PactData {
     uint32 yesVotes; //Count of votes for the motion
     uint32 noVotes; //Count of votes against the motion
     uint128 totalValue; //Total value held against this pact
-    bool refundAvailable;   // Whether refund of all pact's value is available for the rewspective contributors
+    bool refundAvailable; // Whether refund of all pact's value is available for the rewspective contributors
     bool isEditable; //whether the pactText should be editable
     address creator; //Address of the author of original post
     bytes32 groupName;
@@ -69,7 +69,6 @@ contract ProposalPactUpgradeable is
     );
     event LogPactAction(bytes32 indexed uid);
     event LogWithdrawGrant(address indexed beneficiary, uint amount);
-
 
     uint internal pactsCounter; //Stores the number of pacts in this (storage) contract
     Config internal config;
@@ -170,7 +169,7 @@ contract ProposalPactUpgradeable is
 
         PactData storage pactData = pacts[uid];
         require(pactData.creator == address(0), "Already exists");
-        require(bytes(_pactText).length !=0);
+        require(bytes(_pactText).length != 0);
         pactData.isEditable = _isEditable;
         pactData.pactText = _pactText;
         pactData.creator = msg.sender;
@@ -195,9 +194,10 @@ contract ProposalPactUpgradeable is
             } else {
                 require(
                     votingInfo_.duration >=
-                        config_.minOpenParticipationVotingPeriod / 2    //half the duration of open participation min, because it's a more controlled set of users (supposedly)
+                        config_.minOpenParticipationVotingPeriod / 2 //half the duration of open participation min, because it's a more controlled set of users (supposedly)
                 );
-                if (_voters.length != 0 && _voters.length <= 30) _addVoters(uid, _voters);
+                if (_voters.length != 0 && _voters.length <= 30)
+                    _addVoters(uid, _voters);
             }
             require(votingInfo_.duration <= config_.maxVotingPeriod);
 
@@ -233,7 +233,6 @@ contract ProposalPactUpgradeable is
         }
     }
 
- 
     /**
      * @notice Function to add voters to a pact after its creation
      * - Can be performed by OP
@@ -297,9 +296,10 @@ contract ProposalPactUpgradeable is
     function withdrawGrant(uint amount) external {
         require(grants[msg.sender] >= amount); //Checks
         grants[msg.sender] -= amount; //Effects
-        uint commission = (amount*config.commissionPerThousand)/1000;
+        uint commission = (amount * config.commissionPerThousand) / 1000;
         emit LogWithdrawGrant(msg.sender, amount);
-        if(commission != 0) payable(config.commissionSink).transfer(commission);
+        if (commission != 0)
+            payable(config.commissionSink).transfer(commission);
         payable(msg.sender).transfer(amount - commission); //Interactions
     }
 
@@ -366,48 +366,54 @@ contract ProposalPactUpgradeable is
         require(
             userInteractionData[pactid][msg.sender].contribution >=
                 votingInfo_.minContribution
-        );  
+        );
 
         //Set the concluded flag
         votingInfo[pactid].votingConcluded = true;
 
         PactData memory pactData = pacts[pactid];
 
-        if (pactData.totalValue == 0) return;   // Nothing else to do
+        if (pactData.totalValue != 0) {
+            address[] memory finalBeneficiaries = new address[](0); // Stores the list of addresses to be sent the final amount to
 
-        address[] memory finalBeneficiaries = new address[](0);    // Stores the list of addresses to be sent the final amount to
-
-        if (pactData.yesVotes > pactData.noVotes) {
-            if (votingInfo_.refundOnVotedYes) {
+            if (pactData.yesVotes > pactData.noVotes) {
+                if (votingInfo_.refundOnVotedYes) {
+                    pacts[pactid].refundAvailable = true;
+                } else {
+                    finalBeneficiaries = pactData.yesBeneficiaries; //Copy yes beneficiaries from storage to memory
+                }
+            } else if (votingInfo_.refundOnVotedNo) {
                 pacts[pactid].refundAvailable = true;
             } else {
-                finalBeneficiaries = pactData.yesBeneficiaries; //Copy yes beneficiaries from storage to memory
-            }
-        } else if (votingInfo_.refundOnVotedNo) {
-            pacts[pactid].refundAvailable = true;
-        } else {
-            finalBeneficiaries = pactData.noBeneficiaries;
-        }
-
-        if (finalBeneficiaries.length != 0) {
-            uint amountToSend = pactData.totalValue / finalBeneficiaries.length;
-            pacts[pactid].totalValue = 0;
-            for (uint i = 0; i < finalBeneficiaries.length; i++) {
-                grants[finalBeneficiaries[i]] += amountToSend;
-                emit LogAmountOut(pactid, finalBeneficiaries[i], amountToSend);
+                finalBeneficiaries = pactData.noBeneficiaries;
             }
 
-            //The following code will return any small leftover amount after sending it to beneficiaries
-            // But given the size of the integer, the leftover amount will be way smaller than the gas cost
-            // of the operation. It will be dealt with later. For now, the balance of the contract itself will
-            // be a bit higher than expected.
-            // uint totalValueAfter = pactData.totalValue -
-            //     finalBeneficiaries.length *
-            //     amountToSend;
-            // if (totalValueAfter > 0) {
-            //     grants[pactData.creator] += totalValueAfter;
-            // }
+            if (finalBeneficiaries.length != 0) {
+                uint amountToSend = pactData.totalValue /
+                    finalBeneficiaries.length;
+                pacts[pactid].totalValue = 0;
+                for (uint i = 0; i < finalBeneficiaries.length; i++) {
+                    grants[finalBeneficiaries[i]] += amountToSend;
+                    emit LogAmountOut(
+                        pactid,
+                        finalBeneficiaries[i],
+                        amountToSend
+                    );
+                }
+
+                //The following code will return any small leftover amount after sending it to beneficiaries
+                // But given the size of the integer, the leftover amount will be way smaller than the gas cost
+                // of the operation. It will be dealt with later. For now, the balance of the contract itself will
+                // be a bit higher than expected.
+                // uint totalValueAfter = pactData.totalValue -
+                //     finalBeneficiaries.length *
+                //     amountToSend;
+                // if (totalValueAfter > 0) {
+                //     grants[pactData.creator] += totalValueAfter;
+                // }
+            }
         }
+
         emit LogPactAction(pactid);
     }
 

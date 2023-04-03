@@ -4876,9 +4876,9 @@
         }
       }
     },
-    "488f32147caffb1bca650bb5353ecaf2579b1a7495b32b5c4c0c27b4d57c5dc4": {
+    "0c83265104172c9bf13a8c733fe8400f2cbfcfd04d1e68191c654a8076c6d090": {
       "address": "0xffa7CA1AEEEbBc30C874d32C7e22F052BbEa0429",
-      "txHash": "0xe95a658e0f1ad08e17b803449c592cb6b87e691a6c63da1208ab5a9cd57a2fbc",
+      "txHash": "0xdf5531364b6d56ed3729168b37034c6cd23857c7752a2b1f70133a01128e377d",
       "layout": {
         "solcVersion": "0.8.16",
         "storage": [
@@ -4945,39 +4945,39 @@
             "slot": "201",
             "type": "t_uint256",
             "contract": "ProposalPactUpgradeable",
-            "src": "contracts/ProposalPactUpgradeable.sol:74"
+            "src": "contracts/ProposalPactUpgradeable.sol:73"
           },
           {
             "label": "config",
             "offset": 0,
             "slot": "202",
-            "type": "t_struct(Config)6077_storage",
+            "type": "t_struct(Config)1229_storage",
             "contract": "ProposalPactUpgradeable",
-            "src": "contracts/ProposalPactUpgradeable.sol:75"
+            "src": "contracts/ProposalPactUpgradeable.sol:74"
           },
           {
             "label": "pacts",
             "offset": 0,
             "slot": "205",
-            "type": "t_mapping(t_bytes32,t_struct(PactData)6121_storage)",
+            "type": "t_mapping(t_bytes32,t_struct(PactData)1273_storage)",
             "contract": "ProposalPactUpgradeable",
-            "src": "contracts/ProposalPactUpgradeable.sol:76"
+            "src": "contracts/ProposalPactUpgradeable.sol:75"
           },
           {
             "label": "votingInfo",
             "offset": 0,
             "slot": "206",
-            "type": "t_mapping(t_bytes32,t_struct(VotingInfo)6095_storage)",
+            "type": "t_mapping(t_bytes32,t_struct(VotingInfo)1247_storage)",
             "contract": "ProposalPactUpgradeable",
-            "src": "contracts/ProposalPactUpgradeable.sol:77"
+            "src": "contracts/ProposalPactUpgradeable.sol:76"
           },
           {
             "label": "userInteractionData",
             "offset": 0,
             "slot": "207",
-            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(PactUserInteraction)6130_storage))",
+            "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(PactUserInteraction)1282_storage))",
             "contract": "ProposalPactUpgradeable",
-            "src": "contracts/ProposalPactUpgradeable.sol:78"
+            "src": "contracts/ProposalPactUpgradeable.sol:77"
           },
           {
             "label": "grants",
@@ -4985,7 +4985,7 @@
             "slot": "208",
             "type": "t_mapping(t_address,t_uint256)",
             "contract": "ProposalPactUpgradeable",
-            "src": "contracts/ProposalPactUpgradeable.sol:81"
+            "src": "contracts/ProposalPactUpgradeable.sol:80"
           }
         ],
         "types": {
@@ -5013,7 +5013,7 @@
             "label": "bytes32",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_address,t_struct(PactUserInteraction)6130_storage)": {
+          "t_mapping(t_address,t_struct(PactUserInteraction)1282_storage)": {
             "label": "mapping(address => struct PactUserInteraction)",
             "numberOfBytes": "32"
           },
@@ -5021,15 +5021,15 @@
             "label": "mapping(address => uint256)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes32,t_mapping(t_address,t_struct(PactUserInteraction)6130_storage))": {
+          "t_mapping(t_bytes32,t_mapping(t_address,t_struct(PactUserInteraction)1282_storage))": {
             "label": "mapping(bytes32 => mapping(address => struct PactUserInteraction))",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes32,t_struct(PactData)6121_storage)": {
+          "t_mapping(t_bytes32,t_struct(PactData)1273_storage)": {
             "label": "mapping(bytes32 => struct PactData)",
             "numberOfBytes": "32"
           },
-          "t_mapping(t_bytes32,t_struct(VotingInfo)6095_storage)": {
+          "t_mapping(t_bytes32,t_struct(VotingInfo)1247_storage)": {
             "label": "mapping(bytes32 => struct VotingInfo)",
             "numberOfBytes": "32"
           },
@@ -5037,7 +5037,7 @@
             "label": "string",
             "numberOfBytes": "32"
           },
-          "t_struct(Config)6077_storage": {
+          "t_struct(Config)1229_storage": {
             "label": "struct Config",
             "members": [
               {
@@ -5079,7 +5079,7 @@
             ],
             "numberOfBytes": "96"
           },
-          "t_struct(PactData)6121_storage": {
+          "t_struct(PactData)1273_storage": {
             "label": "struct PactData",
             "members": [
               {
@@ -5151,7 +5151,7 @@
             ],
             "numberOfBytes": "224"
           },
-          "t_struct(PactUserInteraction)6130_storage": {
+          "t_struct(PactUserInteraction)1282_storage": {
             "label": "struct PactUserInteraction",
             "members": [
               {
@@ -5181,7 +5181,7 @@
             ],
             "numberOfBytes": "32"
           },
-          "t_struct(VotingInfo)6095_storage": {
+          "t_struct(VotingInfo)1247_storage": {
             "label": "struct VotingInfo",
             "members": [
               {
